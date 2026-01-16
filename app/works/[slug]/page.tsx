@@ -1,16 +1,49 @@
 import Image from 'next/image'
 import { client } from '@/lib/sanity.client'
-import { workBySlugQuery } from '@/lib/sanity.queries'
 import { notFound } from 'next/navigation'
+import { groq } from 'next-sanity'
 
 export const revalidate = 60
+
+const workBySlugQuery = groq`
+  *[_type == "work" && slug.current == $slug][0] {
+    _id,
+    title,
+    slug,
+    year,
+    yearNumeric,
+    workType,
+    materials,
+    dimensions,
+    sizeCategory,
+    themes,
+    aiInvolved,
+    aiRole,
+    aiTools,
+    images[] {
+      asset->,
+      title,
+      caption,
+      alt
+    },
+    videos,
+    description,
+    currentLocation,
+    status
+  }
+`
 
 async function getWork(slug: string) {
   return await client.fetch(workBySlugQuery, { slug })
 }
 
-export default async function WorkPage({ params }: { params: { slug: string } }) {
-  const work = await getWork(params.slug)
+export default async function WorkPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}) {
+  const { slug } = await params
+  const work = await getWork(slug)
 
   if (!work) {
     notFound()
@@ -43,10 +76,9 @@ export default async function WorkPage({ params }: { params: { slug: string } })
                 height={800}
                 className="w-full h-auto"
               />
-              {(image.title || image.caption) && (
+              {image.caption && (
                 <div className="mt-2 text-sm text-gray-600">
-                  {image.title && <p className="font-medium">{image.title}</p>}
-                  {image.caption && <p>{image.caption}</p>}
+                  <p>{image.caption}</p>
                 </div>
               )}
             </div>
