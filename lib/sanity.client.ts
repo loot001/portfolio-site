@@ -6,6 +6,11 @@ export const client = createClient({
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET!,
   apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION!,
   useCdn: true,
+  perspective: 'published',
+  stega: {
+    enabled: true,
+    studioUrl: 'https://luther-thie-portfolio.sanity.studio',
+  },
 })
 
 const builder = imageUrlBuilder(client)
