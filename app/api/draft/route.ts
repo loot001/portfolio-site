@@ -7,16 +7,15 @@ export async function GET(request: Request) {
   const secret = searchParams.get('secret')
   const slug = searchParams.get('slug')
 
-  // Check the secret - you can set this to any value you want
-  // For development, we'll use a simple secret
-  if (secret !== 'preview-secret-2024') {
+  // Check the secret and next parameters
+  if (secret !== process.env.SANITY_STUDIO_PREVIEW_SECRET || !slug) {
     return new Response('Invalid token', { status: 401 })
   }
 
   // Enable Draft Mode by setting the cookie
-  draftMode().enable()
+  const draft = await draftMode()
+  draft.enable()
 
   // Redirect to the path from the fetched post
-  // We don't want to redirect to the preview page if the slug doesn't exist
-  redirect(slug || '/')
+  redirect(slug)
 }
