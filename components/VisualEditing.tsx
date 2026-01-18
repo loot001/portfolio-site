@@ -1,12 +1,12 @@
 'use client'
 
-import { enableOverlays } from '@sanity/visual-editing'
+import { enableVisualEditing } from '@sanity/visual-editing'
 import { useEffect } from 'react'
 
 export function VisualEditing() {
   useEffect(() => {
-    // Enable visual editing overlays
-    const disable = enableOverlays({
+    // Enable visual editing
+    const disable = enableVisualEditing({
       zIndex: 999999,
     })
     
