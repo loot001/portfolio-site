@@ -139,7 +139,7 @@ export default async function WorkPage({
               const getVideoEmbedUrl = (platform: string, url: string) => {
                 if (platform === 'vimeo') {
                   const videoId = url.split('/').pop()?.split('?')[0]
-                  return `https://player.vimeo.com/video/${videoId}`
+                  return `https://player.vimeo.com/video/${videoId}?h=0&badge=0&autopause=0&player_id=0`
                 } else if (platform === 'youtube') {
                   const videoId = url.includes('v=') 
                     ? url.split('v=')[1]?.split('&')[0]
@@ -158,8 +158,9 @@ export default async function WorkPage({
                       src={embedUrl}
                       className="w-full h-full"
                       frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture"
+                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
                       allowFullScreen
+                      title={block.caption || 'Video'}
                     />
                   </div>
                   {block.caption && (
