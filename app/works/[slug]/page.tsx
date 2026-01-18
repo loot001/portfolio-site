@@ -138,8 +138,11 @@ export default async function WorkPage({
             if (block._type === 'videoBlock') {
               const getVideoEmbedUrl = (platform: string, url: string) => {
                 if (platform === 'vimeo') {
-                  const videoId = url.split('/').pop()?.split('?')[0]
-                  return `https://player.vimeo.com/video/${videoId}?h=0&badge=0&autopause=0&player_id=0`
+                  // Extract video ID - handle both vimeo.com and player.vimeo.com URLs
+                  let videoId = url.split('/').filter(Boolean).pop()?.split('?')[0]
+                  
+                  // Return direct player URL
+                  return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0`
                 } else if (platform === 'youtube') {
                   const videoId = url.includes('v=') 
                     ? url.split('v=')[1]?.split('&')[0]
@@ -152,13 +155,13 @@ export default async function WorkPage({
               const embedUrl = getVideoEmbedUrl(block.platform, block.url)
               
               return (
-                <div key={block._key}>
-                  <div className="aspect-video">
+                <div key={block._key} className="mb-8">
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                     <iframe
                       src={embedUrl}
-                      className="w-full h-full"
+                      className="absolute top-0 left-0 w-full h-full"
                       frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                      allow="autoplay; fullscreen; picture-in-picture"
                       allowFullScreen
                       title={block.caption || 'Video'}
                     />
@@ -210,28 +213,35 @@ export default async function WorkPage({
           {/* Videos */}
           {work.videos && work.videos.length > 0 && (
             <div className="space-y-8 mb-12">
-              {work.videos.map((video: any, index: number) => (
-                <div key={index} className="aspect-video">
-                  {video.platform === 'vimeo' && (
+              {work.videos.map((video: any, index: number) => {
+                const getEmbedUrl = (platform: string, url: string) => {
+                  if (platform === 'vimeo') {
+                    let videoId = url.split('/').filter(Boolean).pop()?.split('?')[0]
+                    return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0`
+                  } else if (platform === 'youtube') {
+                    const videoId = url.includes('v=') 
+                      ? url.split('v=')[1]?.split('&')[0]
+                      : url.split('/').pop()
+                    return `https://www.youtube.com/embed/${videoId}`
+                  }
+                  return url
+                }
+                
+                const embedUrl = getEmbedUrl(video.platform, video.url)
+                
+                return (
+                  <div key={index} className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                     <iframe
-                      src={`https://player.vimeo.com/video/${video.url.split('/').pop()}`}
-                      className="w-full h-full"
+                      src={embedUrl}
+                      className="absolute top-0 left-0 w-full h-full"
                       frameBorder="0"
                       allow="autoplay; fullscreen; picture-in-picture"
                       allowFullScreen
+                      title={`Video ${index + 1}`}
                     />
-                  )}
-                  {video.platform === 'youtube' && (
-                    <iframe
-                      src={`https://www.youtube.com/embed/${video.url.split('v=')[1] || video.url.split('/').pop()}`}
-                      className="w-full h-full"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
           )}
         </>
