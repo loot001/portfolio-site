@@ -13,8 +13,14 @@ export const worksQuery = groq`
     dimensions,
     themes,
     aiInvolved,
-    "thumbnail": images[0].asset->url,
-    "thumbnailAlt": images[0].alt
+    "thumbnail": coalesce(
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
+    ),
+    "thumbnailAlt": coalesce(
+      contentBlocks[_type == "imageBlock"][0].alt,
+      images[0].alt
+    )
   }
 `
 
@@ -34,6 +40,33 @@ export const workBySlugQuery = groq`
     aiInvolved,
     aiRole,
     aiTools,
+    
+    // Content Blocks (new system)
+    contentBlocks[] {
+      _type,
+      _key,
+      
+      _type == "textBlock" => {
+        content
+      },
+      
+      _type == "imageBlock" => {
+        image {
+          asset->
+        },
+        caption,
+        alt,
+        size
+      },
+      
+      _type == "videoBlock" => {
+        platform,
+        url,
+        caption
+      }
+    },
+    
+    // Legacy fields (fallback)
     images[] {
       asset->,
       title,
@@ -42,6 +75,7 @@ export const workBySlugQuery = groq`
     },
     videos,
     description,
+    
     currentLocation,
     status
   }
@@ -85,7 +119,10 @@ export const projectBySlugQuery = groq`
       title,
       slug,
       year,
-      "thumbnail": images[0].asset->url
+      "thumbnail": coalesce(
+        contentBlocks[_type == "imageBlock"][0].image.asset->url,
+        images[0].asset->url
+      )
     },
     status
   }
@@ -99,7 +136,13 @@ export const featuredWorksQuery = groq`
     slug,
     year,
     workType,
-    "thumbnail": images[0].asset->url,
-    "thumbnailAlt": images[0].alt
+    "thumbnail": coalesce(
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
+    ),
+    "thumbnailAlt": coalesce(
+      contentBlocks[_type == "imageBlock"][0].alt,
+      images[0].alt
+    )
   }
 `
