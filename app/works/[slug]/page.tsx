@@ -182,13 +182,14 @@ export default async function WorkPage({
             // Video Block
             if (block._type === 'videoBlock') {
               let embedUrl = ''
+              const platform = block.platform?.toLowerCase()
               
-              if (block.platform === 'vimeo') {
+              if (platform === 'vimeo') {
                 const videoId = getVimeoId(block.url)
                 if (videoId) {
                   embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                 }
-              } else if (block.platform === 'youtube') {
+              } else if (platform === 'youtube') {
                 const videoId = getYouTubeId(block.url)
                 if (videoId) {
                   embedUrl = `https://www.youtube.com/embed/${videoId}`
@@ -265,13 +266,14 @@ export default async function WorkPage({
             <div className="space-y-8 mb-12">
               {work.videos.map((video: any, index: number) => {
                 let embedUrl = ''
+                const platform = video.platform?.toLowerCase()
                 
-                if (video.platform === 'vimeo') {
+                if (platform === 'vimeo') {
                   const videoId = getVimeoId(video.url)
                   if (videoId) {
                     embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                   }
-                } else if (video.platform === 'youtube') {
+                } else if (platform === 'youtube') {
                   const videoId = getYouTubeId(video.url)
                   if (videoId) {
                     embedUrl = `https://www.youtube.com/embed/${videoId}`
