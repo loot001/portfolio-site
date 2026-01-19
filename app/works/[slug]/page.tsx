@@ -21,29 +21,21 @@ const workBySlugQuery = groq`
     aiRole,
     aiTools,
     
-    // Content Blocks (new system)
+    // Content Blocks (new system) - fetch all fields from all block types
     contentBlocks[] {
       _type,
       _key,
-      
-      _type == "textBlock" => {
-        content
-      },
-      
-      _type == "imageBlock" => {
-        image {
-          asset->
-        },
-        caption,
-        alt,
-        size
-      },
-      
-      _type == "videoBlock" => {
-        platform,
-        url,
-        caption
-      }
+      // Text block fields
+      content,
+      // Image block fields
+      image { asset-> },
+      alt,
+      size,
+      // Video block fields
+      platform,
+      url,
+      // Shared fields
+      caption
     },
     
     // Legacy fields (fallback)
