@@ -65,6 +65,51 @@ async function getWork(slug: string) {
   return await client.fetch(workBySlugQuery, { slug })
 }
 
+// Helper function to extract Vimeo video ID from various URL formats
+function getVimeoId(url: string): string | null {
+  if (!url) return null
+  
+  // Handle various Vimeo URL formats:
+  // https://vimeo.com/441684647
+  // https://player.vimeo.com/video/441684647
+  // https://vimeo.com/441684647?share=copy
+  // https://vimeo.com/441684647/abc123 (private videos with hash)
+  
+  const patterns = [
+    /vimeo\.com\/(\d+)/,           // Standard vimeo.com/ID
+    /player\.vimeo\.com\/video\/(\d+)/, // Player URL
+  ]
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  
+  return null
+}
+
+// Helper function to extract YouTube video ID
+function getYouTubeId(url: string): string | null {
+  if (!url) return null
+  
+  const patterns = [
+    /youtube\.com\/watch\?v=([^&]+)/,  // Standard watch URL
+    /youtu\.be\/([^?]+)/,               // Short URL
+    /youtube\.com\/embed\/([^?]+)/,     // Embed URL
+  ]
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  
+  return null
+}
+
 export default async function WorkPage({ 
   params 
 }: { 
@@ -136,23 +181,28 @@ export default async function WorkPage({
             
             // Video Block
             if (block._type === 'videoBlock') {
-              const getVideoEmbedUrl = (platform: string, url: string) => {
-                if (platform === 'vimeo') {
-                  // Extract video ID - handle both vimeo.com and player.vimeo.com URLs
-                  let videoId = url.split('/').filter(Boolean).pop()?.split('?')[0]
-                  
-                  // Return direct player URL
-                  return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0`
-                } else if (platform === 'youtube') {
-                  const videoId = url.includes('v=') 
-                    ? url.split('v=')[1]?.split('&')[0]
-                    : url.split('/').pop()
-                  return `https://www.youtube.com/embed/${videoId}`
+              let embedUrl = ''
+              
+              if (block.platform === 'vimeo') {
+                const videoId = getVimeoId(block.url)
+                if (videoId) {
+                  embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                 }
-                return url
+              } else if (block.platform === 'youtube') {
+                const videoId = getYouTubeId(block.url)
+                if (videoId) {
+                  embedUrl = `https://www.youtube.com/embed/${videoId}`
+                }
               }
               
-              const embedUrl = getVideoEmbedUrl(block.platform, block.url)
+              // Don't render if we couldn't parse the URL
+              if (!embedUrl) {
+                return (
+                  <div key={block._key} className="mb-8 p-4 bg-gray-100 text-gray-600">
+                    <p>Video unavailable - invalid URL format</p>
+                  </div>
+                )
+              }
               
               return (
                 <div key={block._key} className="mb-8">
@@ -214,20 +264,21 @@ export default async function WorkPage({
           {work.videos && work.videos.length > 0 && (
             <div className="space-y-8 mb-12">
               {work.videos.map((video: any, index: number) => {
-                const getEmbedUrl = (platform: string, url: string) => {
-                  if (platform === 'vimeo') {
-                    let videoId = url.split('/').filter(Boolean).pop()?.split('?')[0]
-                    return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0`
-                  } else if (platform === 'youtube') {
-                    const videoId = url.includes('v=') 
-                      ? url.split('v=')[1]?.split('&')[0]
-                      : url.split('/').pop()
-                    return `https://www.youtube.com/embed/${videoId}`
+                let embedUrl = ''
+                
+                if (video.platform === 'vimeo') {
+                  const videoId = getVimeoId(video.url)
+                  if (videoId) {
+                    embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                   }
-                  return url
+                } else if (video.platform === 'youtube') {
+                  const videoId = getYouTubeId(video.url)
+                  if (videoId) {
+                    embedUrl = `https://www.youtube.com/embed/${videoId}`
+                  }
                 }
                 
-                const embedUrl = getEmbedUrl(video.platform, video.url)
+                if (!embedUrl) return null
                 
                 return (
                   <div key={index} className="relative w-full" style={{ paddingBottom: '56.25%' }}>
