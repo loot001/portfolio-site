@@ -61,22 +61,28 @@ async function getWork(slug: string) {
 function getVimeoId(url: string): string | null {
   if (!url) return null
   
-  // Handle various Vimeo URL formats:
-  // https://vimeo.com/441684647
-  // https://player.vimeo.com/video/441684647
-  // https://vimeo.com/441684647?share=copy
-  // https://vimeo.com/441684647/abc123 (private videos with hash)
+  // Simple string-based extraction (more reliable than regex)
+  // Handle: https://vimeo.com/441684647 or https://vimeo.com/441684647?query=params
   
-  const patterns = [
-    /vimeo\.com\/(\d+)/,           // Standard vimeo.com/ID
-    /player\.vimeo\.com\/video\/(\d+)/, // Player URL
-  ]
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match && match[1]) {
-      return match[1]
+  try {
+    const urlObj = new URL(url)
+    
+    // For vimeo.com URLs
+    if (urlObj.hostname.includes('vimeo.com')) {
+      // pathname will be like "/441684647" or "/video/441684647"
+      const pathParts = urlObj.pathname.split('/').filter(Boolean)
+      
+      // Find the first part that's all digits
+      for (const part of pathParts) {
+        if (/^\d+$/.test(part)) {
+          return part
+        }
+      }
     }
+  } catch (e) {
+    // If URL parsing fails, try simple string extraction
+    const match = url.match(/vimeo\.com\/(\d+)/)
+    if (match) return match[1]
   }
   
   return null
@@ -182,6 +188,7 @@ export default async function WorkPage({
               
               if (platform === 'vimeo') {
                 const videoId = getVimeoId(rawUrl)
+                console.log('Vimeo extraction:', { rawUrl, videoId })
                 if (videoId) {
                   embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                 }
@@ -194,6 +201,8 @@ export default async function WorkPage({
               
               // Don't render if we couldn't parse the URL - show debug info
               if (!embedUrl) {
+                const testVideoId = getVimeoId(rawUrl)
+                const testMatch = rawUrl?.match(/vimeo\.com\/(\d+)/)
                 return (
                   <div key={block._key} className="mb-8 p-4 bg-red-100 text-red-800 rounded border border-red-300">
                     <p className="font-bold mb-2">Video Debug Info:</p>
@@ -201,6 +210,10 @@ export default async function WorkPage({
                     <p><strong>block.platform:</strong> "{block.platform || 'UNDEFINED'}"</p>
                     <p><strong>block.url:</strong> "{block.url || 'UNDEFINED'}"</p>
                     <p><strong>platform (lowercase):</strong> "{platform || 'UNDEFINED'}"</p>
+                    <p><strong>getVimeoId result:</strong> "{testVideoId || 'NULL'}"</p>
+                    <p><strong>Direct regex match:</strong> "{testMatch ? testMatch[1] : 'NO MATCH'}"</p>
+                    <p><strong>URL length:</strong> {rawUrl?.length}</p>
+                    <p><strong>URL char codes:</strong> {rawUrl?.split('').slice(0, 30).map(c => c.charCodeAt(0)).join(',')}</p>
                     <p className="mt-2 text-sm">Raw block data: {JSON.stringify(block)}</p>
                   </div>
                 )
