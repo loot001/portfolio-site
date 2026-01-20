@@ -21,20 +21,16 @@ const workBySlugQuery = groq`
     aiRole,
     aiTools,
     
-    // Content Blocks (new system) - fetch all fields from all block types
+    // Content Blocks - fetch all fields
     contentBlocks[] {
       _type,
       _key,
-      // Text block fields
       content,
-      // Image block fields
       image { asset-> },
       alt,
       size,
-      // Video block fields
       platform,
       url,
-      // Shared fields
       caption
     },
     
@@ -55,57 +51,6 @@ const workBySlugQuery = groq`
 
 async function getWork(slug: string) {
   return await client.fetch(workBySlugQuery, { slug })
-}
-
-// Helper function to extract Vimeo video ID from various URL formats
-function getVimeoId(url: string): string | null {
-  if (!url) return null
-  
-  // Simple string-based extraction (more reliable than regex)
-  // Handle: https://vimeo.com/441684647 or https://vimeo.com/441684647?query=params
-  
-  try {
-    const urlObj = new URL(url)
-    
-    // For vimeo.com URLs
-    if (urlObj.hostname.includes('vimeo.com')) {
-      // pathname will be like "/441684647" or "/video/441684647"
-      const pathParts = urlObj.pathname.split('/').filter(Boolean)
-      
-      // Find the first part that's all digits
-      for (const part of pathParts) {
-        if (/^\d+$/.test(part)) {
-          return part
-        }
-      }
-    }
-  } catch (e) {
-    // If URL parsing fails, try simple string extraction
-    const match = url.match(/vimeo\.com\/(\d+)/)
-    if (match) return match[1]
-  }
-  
-  return null
-}
-
-// Helper function to extract YouTube video ID
-function getYouTubeId(url: string): string | null {
-  if (!url) return null
-  
-  const patterns = [
-    /youtube\.com\/watch\?v=([^&]+)/,  // Standard watch URL
-    /youtu\.be\/([^?]+)/,               // Short URL
-    /youtube\.com\/embed\/([^?]+)/,     // Embed URL
-  ]
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match && match[1]) {
-      return match[1]
-    }
-  }
-  
-  return null
 }
 
 export default async function WorkPage({ 
@@ -177,44 +122,30 @@ export default async function WorkPage({
               )
             }
             
-            // Video Block
+            // Video Block - Simplified inline extraction
             if (block._type === 'videoBlock') {
+              const platform = (block.platform || '').toLowerCase()
+              const url = block.url || ''
+              
               let embedUrl = ''
-              const platform = block.platform?.toLowerCase()
-              const rawUrl = block.url
               
-              // DEBUG: Log to see what we're getting
-              console.log('Video block:', JSON.stringify(block, null, 2))
-              
-              if (platform === 'vimeo') {
-                const videoId = getVimeoId(rawUrl)
-                console.log('Vimeo extraction:', { rawUrl, videoId })
-                if (videoId) {
-                  embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
+              if (platform === 'vimeo' && url) {
+                // Extract video ID directly inline
+                const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+                if (vimeoMatch && vimeoMatch[1]) {
+                  embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
                 }
-              } else if (platform === 'youtube') {
-                const videoId = getYouTubeId(rawUrl)
-                if (videoId) {
-                  embedUrl = `https://www.youtube.com/embed/${videoId}`
+              } else if (platform === 'youtube' && url) {
+                const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)
+                if (youtubeMatch && youtubeMatch[1]) {
+                  embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`
                 }
               }
               
-              // Don't render if we couldn't parse the URL - show debug info
               if (!embedUrl) {
-                const testVideoId = getVimeoId(rawUrl)
-                const testMatch = rawUrl?.match(/vimeo\.com\/(\d+)/)
                 return (
-                  <div key={block._key} className="mb-8 p-4 bg-red-100 text-red-800 rounded border border-red-300">
-                    <p className="font-bold mb-2">Video Debug Info:</p>
-                    <p><strong>block._type:</strong> {block._type}</p>
-                    <p><strong>block.platform:</strong> "{block.platform || 'UNDEFINED'}"</p>
-                    <p><strong>block.url:</strong> "{block.url || 'UNDEFINED'}"</p>
-                    <p><strong>platform (lowercase):</strong> "{platform || 'UNDEFINED'}"</p>
-                    <p><strong>getVimeoId result:</strong> "{testVideoId || 'NULL'}"</p>
-                    <p><strong>Direct regex match:</strong> "{testMatch ? testMatch[1] : 'NO MATCH'}"</p>
-                    <p><strong>URL length:</strong> {rawUrl?.length}</p>
-                    <p><strong>URL char codes:</strong> {rawUrl?.split('').slice(0, 30).map((c: string) => c.charCodeAt(0)).join(',')}</p>
-                    <p className="mt-2 text-sm">Raw block data: {JSON.stringify(block)}</p>
+                  <div key={block._key} className="mb-8 p-4 bg-gray-100 text-gray-600">
+                    <p>Video unavailable</p>
                   </div>
                 )
               }
@@ -279,18 +210,19 @@ export default async function WorkPage({
           {work.videos && work.videos.length > 0 && (
             <div className="space-y-8 mb-12">
               {work.videos.map((video: any, index: number) => {
+                const platform = (video.platform || '').toLowerCase()
+                const url = video.url || ''
                 let embedUrl = ''
-                const platform = video.platform?.toLowerCase()
                 
-                if (platform === 'vimeo') {
-                  const videoId = getVimeoId(video.url)
-                  if (videoId) {
-                    embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
+                if (platform === 'vimeo' && url) {
+                  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+                  if (vimeoMatch && vimeoMatch[1]) {
+                    embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
                   }
-                } else if (platform === 'youtube') {
-                  const videoId = getYouTubeId(video.url)
-                  if (videoId) {
-                    embedUrl = `https://www.youtube.com/embed/${videoId}`
+                } else if (platform === 'youtube' && url) {
+                  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)
+                  if (youtubeMatch && youtubeMatch[1]) {
+                    embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`
                   }
                 }
                 
