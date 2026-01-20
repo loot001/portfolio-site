@@ -124,28 +124,37 @@ export default async function WorkPage({
             
             // Video Block - Simplified inline extraction
             if (block._type === 'videoBlock') {
-              const platform = (block.platform || '').toLowerCase()
-              const url = block.url || ''
+              const platform = String(block.platform || '').toLowerCase().trim()
+              const url = String(block.url || '').trim()
               
               let embedUrl = ''
+              let videoId = ''
               
               if (platform === 'vimeo' && url) {
                 // Extract video ID directly inline
                 const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
                 if (vimeoMatch && vimeoMatch[1]) {
-                  embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
+                  videoId = vimeoMatch[1]
+                  embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0`
                 }
               } else if (platform === 'youtube' && url) {
                 const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)
                 if (youtubeMatch && youtubeMatch[1]) {
-                  embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`
+                  videoId = youtubeMatch[1]
+                  embedUrl = `https://www.youtube.com/embed/${videoId}`
                 }
               }
               
               if (!embedUrl) {
                 return (
-                  <div key={block._key} className="mb-8 p-4 bg-gray-100 text-gray-600">
-                    <p>Video unavailable</p>
+                  <div key={block._key} className="mb-8 p-4 bg-red-100 text-red-800 rounded">
+                    <p className="font-bold">Debug:</p>
+                    <p>platform: "{platform}" (length: {platform.length})</p>
+                    <p>url: "{url}" (length: {url.length})</p>
+                    <p>platform === vimeo: {String(platform === 'vimeo')}</p>
+                    <p>url truthy: {String(!!url)}</p>
+                    <p>videoId: "{videoId}"</p>
+                    <p>embedUrl: "{embedUrl}"</p>
                   </div>
                 )
               }
