@@ -124,8 +124,9 @@ export default async function WorkPage({
             
             // Video Block - Simplified inline extraction
             if (block._type === 'videoBlock') {
-              const platform = String(block.platform || '').toLowerCase().trim()
-              const url = String(block.url || '').trim()
+              // Strip ALL non-printable/invisible characters
+              const platform = String(block.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
+              const url = String(block.url || '').replace(/[^\x20-\x7E]/g, '').trim()
               
               let embedUrl = ''
               let videoId = ''
