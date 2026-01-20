@@ -213,7 +213,7 @@ export default async function WorkPage({
                     <p><strong>getVimeoId result:</strong> "{testVideoId || 'NULL'}"</p>
                     <p><strong>Direct regex match:</strong> "{testMatch ? testMatch[1] : 'NO MATCH'}"</p>
                     <p><strong>URL length:</strong> {rawUrl?.length}</p>
-                    <p><strong>URL char codes:</strong> {rawUrl?.split('').slice(0, 30).map(c => c.charCodeAt(0)).join(',')}</p>
+                    <p><strong>URL char codes:</strong> {rawUrl?.split('').slice(0, 30).map((c: string) => c.charCodeAt(0)).join(',')}</p>
                     <p className="mt-2 text-sm">Raw block data: {JSON.stringify(block)}</p>
                   </div>
                 )
