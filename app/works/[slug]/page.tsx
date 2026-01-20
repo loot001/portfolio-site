@@ -175,24 +175,33 @@ export default async function WorkPage({
             if (block._type === 'videoBlock') {
               let embedUrl = ''
               const platform = block.platform?.toLowerCase()
+              const rawUrl = block.url
+              
+              // DEBUG: Log to see what we're getting
+              console.log('Video block:', JSON.stringify(block, null, 2))
               
               if (platform === 'vimeo') {
-                const videoId = getVimeoId(block.url)
+                const videoId = getVimeoId(rawUrl)
                 if (videoId) {
                   embedUrl = `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`
                 }
               } else if (platform === 'youtube') {
-                const videoId = getYouTubeId(block.url)
+                const videoId = getYouTubeId(rawUrl)
                 if (videoId) {
                   embedUrl = `https://www.youtube.com/embed/${videoId}`
                 }
               }
               
-              // Don't render if we couldn't parse the URL
+              // Don't render if we couldn't parse the URL - show debug info
               if (!embedUrl) {
                 return (
-                  <div key={block._key} className="mb-8 p-4 bg-gray-100 text-gray-600">
-                    <p>Video unavailable - invalid URL format</p>
+                  <div key={block._key} className="mb-8 p-4 bg-red-100 text-red-800 rounded border border-red-300">
+                    <p className="font-bold mb-2">Video Debug Info:</p>
+                    <p><strong>block._type:</strong> {block._type}</p>
+                    <p><strong>block.platform:</strong> "{block.platform || 'UNDEFINED'}"</p>
+                    <p><strong>block.url:</strong> "{block.url || 'UNDEFINED'}"</p>
+                    <p><strong>platform (lowercase):</strong> "{platform || 'UNDEFINED'}"</p>
+                    <p className="mt-2 text-sm">Raw block data: {JSON.stringify(block)}</p>
                   </div>
                 )
               }
