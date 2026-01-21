@@ -4,7 +4,7 @@ import WorksArchiveClient from './WorksArchiveClient'
 
 export const revalidate = 60
 
-// Inline query - no $slug parameter needed for archive
+// Query with thumbnail fallback: dedicated thumbnail → first content block image → first legacy image
 const worksArchiveQuery = groq`
   *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
     _id,
@@ -17,8 +17,16 @@ const worksArchiveQuery = groq`
     dimensions,
     themes,
     aiInvolved,
-    "thumbnail": images[0].asset->url,
-    "thumbnailAlt": images[0].alt
+    "thumbnail": coalesce(
+      thumbnail.asset->url,
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
+    ),
+    "thumbnailAlt": coalesce(
+      contentBlocks[_type == "imageBlock"][0].alt,
+      images[0].alt,
+      title
+    )
   }
 `
 

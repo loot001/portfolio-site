@@ -1,7 +1,9 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { client, urlFor } from '@/lib/sanity.client'
 import { notFound } from 'next/navigation'
 import { groq } from 'next-sanity'
+import { PortableText, PortableTextComponents } from '@portabletext/react'
 
 export const revalidate = 60
 
@@ -21,16 +23,37 @@ const workBySlugQuery = groq`
     aiRole,
     aiTools,
     
-    // Content Blocks - fetch all fields
+    // Content Blocks with rich text and work link expansion
     contentBlocks[] {
       _type,
       _key,
-      content,
+      // Text block - portable text with work links expanded
+      content[] {
+        ...,
+        markDefs[] {
+          ...,
+          _type == "workLink" => {
+            "work": work-> {
+              _id,
+              title,
+              "slug": slug.current,
+              "thumbnail": coalesce(
+                thumbnail.asset->url,
+                contentBlocks[_type == "imageBlock"][0].image.asset->url,
+                images[0].asset->url
+              )
+            }
+          }
+        }
+      },
+      // Image block
       image { asset-> },
       alt,
       size,
+      // Video block
       platform,
       url,
+      // Shared
       caption
     },
     
@@ -51,6 +74,68 @@ const workBySlugQuery = groq`
 
 async function getWork(slug: string) {
   return await client.fetch(workBySlugQuery, { slug })
+}
+
+// Custom components for rendering Portable Text
+const portableTextComponents: PortableTextComponents = {
+  marks: {
+    // External links
+    link: ({ children, value }) => {
+      const target = value?.openInNewTab ? '_blank' : undefined
+      const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
+      return (
+        <a 
+          href={value?.href} 
+          target={target} 
+          rel={rel}
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          {children}
+        </a>
+      )
+    },
+    // Internal work links with hover preview
+    workLink: ({ children, value }) => {
+      const work = value?.work
+      if (!work) {
+        return <span>{children}</span>
+      }
+      
+      return (
+        <Link 
+          href={`/works/${work.slug}`}
+          className="group relative inline-block text-blue-600 hover:text-blue-800 underline"
+        >
+          {children}
+          {/* Hover preview tooltip */}
+          {work.thumbnail && (
+            <span className="invisible group-hover:visible absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 pointer-events-none">
+              <span className="block bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+                <img 
+                  src={`${work.thumbnail}?w=200&h=150&fit=crop`}
+                  alt={work.title}
+                  className="w-48 h-36 object-cover"
+                />
+                <span className="block px-2 py-1 text-xs text-gray-700 bg-gray-50 truncate max-w-48">
+                  {work.title}
+                </span>
+              </span>
+            </span>
+          )}
+        </Link>
+      )
+    }
+  },
+  block: {
+    h3: ({ children }) => <h3 className="text-xl font-semibold mt-6 mb-3">{children}</h3>,
+    h4: ({ children }) => <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>,
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">
+        {children}
+      </blockquote>
+    ),
+    normal: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>
+  }
 }
 
 export default async function WorkPage({ 
@@ -87,13 +172,29 @@ export default async function WorkPage({
       {useContentBlocks && (
         <div className="space-y-8 mb-12">
           {work.contentBlocks.map((block: any) => {
-            // Text Block
+            // Text Block - Rich Text or Legacy Plain Text
             if (block._type === 'textBlock') {
-              return (
-                <div key={block._key} className="prose max-w-none">
-                  <p className="whitespace-pre-wrap">{block.content}</p>
-                </div>
-              )
+              // Handle both old plain text and new portable text
+              if (typeof block.content === 'string') {
+                // Legacy plain text
+                return (
+                  <div key={block._key} className="prose max-w-none">
+                    <p className="whitespace-pre-wrap">{block.content}</p>
+                  </div>
+                )
+              }
+              // New Portable Text (rich text)
+              if (Array.isArray(block.content)) {
+                return (
+                  <div key={block._key} className="prose max-w-none">
+                    <PortableText 
+                      value={block.content} 
+                      components={portableTextComponents}
+                    />
+                  </div>
+                )
+              }
+              return null
             }
             
             // Image Block
@@ -122,9 +223,9 @@ export default async function WorkPage({
               )
             }
             
-            // Video Block - Simplified inline extraction
+            // Video Block - with invisible character fix
             if (block._type === 'videoBlock') {
-              // Strip ALL non-printable/invisible characters
+              // Strip ALL non-printable/invisible characters (fixes Unicode pollution issue)
               const platform = String(block.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
               const url = String(block.url || '').replace(/[^\x20-\x7E]/g, '').trim()
               
@@ -174,7 +275,7 @@ export default async function WorkPage({
         </div>
       )}
 
-      {/* LEGACY LAYOUT (Fallback) */}
+      {/* LEGACY LAYOUT (Fallback for old content) */}
       {!useContentBlocks && (
         <>
           {/* Description */}
