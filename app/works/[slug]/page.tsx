@@ -1,9 +1,8 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { client, urlFor } from '@/lib/sanity.client'
 import { notFound } from 'next/navigation'
 import { groq } from 'next-sanity'
-import { PortableText, PortableTextComponents } from '@portabletext/react'
+import WorkContent from './WorkContent'
 
 export const revalidate = 60
 
@@ -63,7 +62,6 @@ const workBySlugQuery = groq`
   }
 `
 
-// Simple query for navigation - NO $slug parameter
 const allWorksQuery = groq`
   *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
     "slug": slug.current,
@@ -76,7 +74,6 @@ async function getWork(slug: string) {
 }
 
 async function getNavigation(slug: string) {
-  // Fetch all works (no parameters needed)
   const allWorks = await client.fetch(allWorksQuery)
   
   if (!allWorks || allWorks.length === 0) {
@@ -95,64 +92,6 @@ async function getNavigation(slug: string) {
   return { prev, next }
 }
 
-const portableTextComponents: PortableTextComponents = {
-  marks: {
-    link: ({ children, value }) => {
-      const target = value?.openInNewTab ? '_blank' : undefined
-      const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
-      return (
-        <a 
-          href={value?.href} 
-          target={target} 
-          rel={rel}
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          {children}
-        </a>
-      )
-    },
-    workLink: ({ children, value }) => {
-      const work = value?.work
-      if (!work) {
-        return <span>{children}</span>
-      }
-      
-      return (
-        <Link 
-          href={`/works/${work.slug}`}
-          className="group relative inline-block text-blue-600 hover:text-blue-800 underline"
-        >
-          {children}
-          {work.thumbnail && (
-            <span className="invisible group-hover:visible absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 pointer-events-none">
-              <span className="block bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
-                <img 
-                  src={`${work.thumbnail}?w=200&h=150&fit=crop`}
-                  alt={work.title}
-                  className="w-48 h-36 object-cover"
-                />
-                <span className="block px-2 py-1 text-xs text-gray-700 bg-gray-50 truncate max-w-48">
-                  {work.title}
-                </span>
-              </span>
-            </span>
-          )}
-        </Link>
-      )
-    }
-  },
-  block: {
-    h3: ({ children }) => <h3 className="text-xl font-semibold mt-6 mb-3">{children}</h3>,
-    h4: ({ children }) => <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>,
-    blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">
-        {children}
-      </blockquote>
-    ),
-    normal: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>
-  }
-}
-
 export default async function WorkPage({ 
   params 
 }: { 
@@ -168,7 +107,20 @@ export default async function WorkPage({
     notFound()
   }
 
-  const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
+  // Pre-process images for the client component (convert urlFor to actual URLs)
+  const processedWork = {
+    ...work,
+    contentBlocks: work.contentBlocks?.map((block: any) => {
+      if (block._type === 'imageBlock' && block.image?.asset) {
+        return {
+          ...block,
+          imageUrl: urlFor(block.image).width(1200).url(),
+          imageLargeUrl: urlFor(block.image).width(2000).url()
+        }
+      }
+      return block
+    })
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -224,171 +176,8 @@ export default async function WorkPage({
         </div>
       </div>
 
-      {/* Content Blocks */}
-      {useContentBlocks && (
-        <div className="space-y-8 mb-12">
-          {work.contentBlocks.map((block: any) => {
-            if (block._type === 'textBlock') {
-              if (typeof block.content === 'string') {
-                return (
-                  <div key={block._key} className="prose max-w-none">
-                    <p className="whitespace-pre-wrap">{block.content}</p>
-                  </div>
-                )
-              }
-              if (Array.isArray(block.content)) {
-                return (
-                  <div key={block._key} className="prose max-w-none">
-                    <PortableText value={block.content} components={portableTextComponents} />
-                  </div>
-                )
-              }
-              return null
-            }
-            
-            if (block._type === 'imageBlock') {
-              const sizeClasses = {
-                full: 'w-full',
-                large: 'w-4/5 mx-auto',
-                medium: 'w-3/5 mx-auto'
-              }
-              
-              return (
-                <div key={block._key} className={sizeClasses[block.size as keyof typeof sizeClasses] || 'w-full'}>
-                  <Image
-                    src={urlFor(block.image).width(1200).url()}
-                    alt={block.alt || block.caption || ''}
-                    width={1200}
-                    height={800}
-                    className="w-full h-auto"
-                  />
-                  {block.caption && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>{block.caption}</p>
-                    </div>
-                  )}
-                </div>
-              )
-            }
-            
-            if (block._type === 'videoBlock') {
-              const platform = String(block.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
-              const url = String(block.url || '').replace(/[^\x20-\x7E]/g, '').trim()
-              
-              let embedUrl = ''
-              
-              if (platform === 'vimeo' && url) {
-                const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
-                if (vimeoMatch && vimeoMatch[1]) {
-                  embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
-                }
-              } else if (platform === 'youtube' && url) {
-                const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)
-                if (youtubeMatch && youtubeMatch[1]) {
-                  embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`
-                }
-              }
-              
-              if (!embedUrl) {
-                return (
-                  <div key={block._key} className="mb-8 p-4 bg-gray-100 text-gray-600">
-                    <p>Video unavailable</p>
-                  </div>
-                )
-              }
-              
-              return (
-                <div key={block._key} className="mb-8">
-                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                    <iframe
-                      src={embedUrl}
-                      className="absolute top-0 left-0 w-full h-full"
-                      frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      title={block.caption || 'Video'}
-                    />
-                  </div>
-                  {block.caption && (
-                    <p className="mt-2 text-sm text-gray-600">{block.caption}</p>
-                  )}
-                </div>
-              )
-            }
-            
-            return null
-          })}
-        </div>
-      )}
-
-      {/* Legacy Layout */}
-      {!useContentBlocks && (
-        <>
-          {work.description && (
-            <div className="prose max-w-none mb-12">
-              <p className="whitespace-pre-wrap">{work.description}</p>
-            </div>
-          )}
-
-          {work.images && work.images.length > 0 && (
-            <div className="space-y-8 mb-12">
-              {work.images.map((image: any, index: number) => (
-                <div key={index}>
-                  <Image
-                    src={image.asset.url}
-                    alt={image.alt || image.title || work.title}
-                    width={1200}
-                    height={800}
-                    className="w-full h-auto"
-                  />
-                  {image.caption && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>{image.caption}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {work.videos && work.videos.length > 0 && (
-            <div className="space-y-8 mb-12">
-              {work.videos.map((video: any, index: number) => {
-                const platform = String(video.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
-                const url = String(video.url || '').replace(/[^\x20-\x7E]/g, '').trim()
-                let embedUrl = ''
-                
-                if (platform === 'vimeo' && url) {
-                  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
-                  if (vimeoMatch && vimeoMatch[1]) {
-                    embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?title=0&byline=0&portrait=0`
-                  }
-                } else if (platform === 'youtube' && url) {
-                  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?]+)/)
-                  if (youtubeMatch && youtubeMatch[1]) {
-                    embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`
-                  }
-                }
-                
-                if (!embedUrl) return null
-                
-                return (
-                  <div key={index} className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                    <iframe
-                      src={embedUrl}
-                      className="absolute top-0 left-0 w-full h-full"
-                      frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      title={`Video ${index + 1}`}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
+      {/* Work Content with Lightbox */}
+      <WorkContent work={processedWork} />
 
       {/* Themes and AI info */}
       {(work.themes || work.aiInvolved) && (
