@@ -22,8 +22,6 @@ const workBySlugQuery = groq`
     aiInvolved,
     aiRole,
     aiTools,
-    
-    // Content Blocks with rich text and work link expansion
     contentBlocks[] {
       _type,
       _key,
@@ -52,8 +50,6 @@ const workBySlugQuery = groq`
       url,
       caption
     },
-    
-    // Legacy fields (fallback)
     images[] {
       asset->,
       title,
@@ -62,14 +58,13 @@ const workBySlugQuery = groq`
     },
     videos,
     description,
-    
     currentLocation,
     status
   }
 `
 
-// Query to get all works for navigation (sorted same as archive)
-const navigationQuery = groq`
+// Simple query for navigation - NO $slug parameter
+const allWorksQuery = groq`
   *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
     "slug": slug.current,
     title
@@ -81,7 +76,8 @@ async function getWork(slug: string) {
 }
 
 async function getNavigation(slug: string) {
-  const allWorks = await client.fetch(navigationQuery)
+  // Fetch all works (no parameters needed)
+  const allWorks = await client.fetch(allWorksQuery)
   
   if (!allWorks || allWorks.length === 0) {
     return { prev: null, next: null }
@@ -99,7 +95,6 @@ async function getNavigation(slug: string) {
   return { prev, next }
 }
 
-// Custom components for rendering Portable Text
 const portableTextComponents: PortableTextComponents = {
   marks: {
     link: ({ children, value }) => {
@@ -177,7 +172,7 @@ export default async function WorkPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Previous/Next Navigation - Top */}
+      {/* Top Navigation */}
       <nav className="flex justify-between items-center mb-8 text-sm">
         <div className="w-1/3">
           {navigation.prev && (
@@ -195,10 +190,7 @@ export default async function WorkPage({
         </div>
         
         <div className="w-1/3 text-center">
-          <Link 
-            href="/works"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
-          >
+          <Link href="/works" className="text-gray-600 hover:text-gray-900 transition-colors">
             All Works
           </Link>
         </div>
@@ -232,11 +224,10 @@ export default async function WorkPage({
         </div>
       </div>
 
-      {/* CONTENT BLOCKS (New System) */}
+      {/* Content Blocks */}
       {useContentBlocks && (
         <div className="space-y-8 mb-12">
           {work.contentBlocks.map((block: any) => {
-            // Text Block
             if (block._type === 'textBlock') {
               if (typeof block.content === 'string') {
                 return (
@@ -248,17 +239,13 @@ export default async function WorkPage({
               if (Array.isArray(block.content)) {
                 return (
                   <div key={block._key} className="prose max-w-none">
-                    <PortableText 
-                      value={block.content} 
-                      components={portableTextComponents}
-                    />
+                    <PortableText value={block.content} components={portableTextComponents} />
                   </div>
                 )
               }
               return null
             }
             
-            // Image Block
             if (block._type === 'imageBlock') {
               const sizeClasses = {
                 full: 'w-full',
@@ -284,7 +271,6 @@ export default async function WorkPage({
               )
             }
             
-            // Video Block
             if (block._type === 'videoBlock') {
               const platform = String(block.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
               const url = String(block.url || '').replace(/[^\x20-\x7E]/g, '').trim()
@@ -335,7 +321,7 @@ export default async function WorkPage({
         </div>
       )}
 
-      {/* LEGACY LAYOUT (Fallback) */}
+      {/* Legacy Layout */}
       {!useContentBlocks && (
         <>
           {work.description && (
@@ -404,7 +390,7 @@ export default async function WorkPage({
         </>
       )}
 
-      {/* Additional metadata */}
+      {/* Themes and AI info */}
       {(work.themes || work.aiInvolved) && (
         <div className="border-t pt-8 mt-12 space-y-4">
           {work.themes && work.themes.length > 0 && (
@@ -434,14 +420,11 @@ export default async function WorkPage({
         </div>
       )}
 
-      {/* Previous/Next Navigation - Bottom */}
+      {/* Bottom Navigation */}
       <nav className="flex justify-between items-center mt-16 pt-8 border-t">
         <div className="w-1/2 pr-4">
           {navigation.prev && (
-            <Link 
-              href={`/works/${navigation.prev.slug}`}
-              className="group block"
-            >
+            <Link href={`/works/${navigation.prev.slug}`} className="group block">
               <span className="text-sm text-gray-500 group-hover:text-gray-700">← Previous</span>
               <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
                 {navigation.prev.title}
@@ -452,10 +435,7 @@ export default async function WorkPage({
         
         <div className="w-1/2 pl-4 text-right">
           {navigation.next && (
-            <Link 
-              href={`/works/${navigation.next.slug}`}
-              className="group block"
-            >
+            <Link href={`/works/${navigation.next.slug}`} className="group block">
               <span className="text-sm text-gray-500 group-hover:text-gray-700">Next →</span>
               <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
                 {navigation.next.title}
