@@ -68,19 +68,12 @@ const workBySlugQuery = groq`
   }
 `
 
-// Query to get previous and next works for navigation
+// Query to get all works for navigation (sorted same as archive)
 const navigationQuery = groq`
-{
-  "current": *[_type == "work" && slug.current == $slug][0] {
-    yearNumeric,
-    title
-  },
-  "allWorks": *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
+  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
     "slug": slug.current,
-    title,
-    yearNumeric
+    title
   }
-}
 `
 
 async function getWork(slug: string) {
@@ -88,20 +81,20 @@ async function getWork(slug: string) {
 }
 
 async function getNavigation(slug: string) {
-  const data = await client.fetch(navigationQuery, { slug })
+  const allWorks = await client.fetch(navigationQuery)
   
-  if (!data.allWorks || data.allWorks.length === 0) {
+  if (!allWorks || allWorks.length === 0) {
     return { prev: null, next: null }
   }
   
-  const currentIndex = data.allWorks.findIndex((w: any) => w.slug === slug)
+  const currentIndex = allWorks.findIndex((w: any) => w.slug === slug)
   
   if (currentIndex === -1) {
     return { prev: null, next: null }
   }
   
-  const prev = currentIndex > 0 ? data.allWorks[currentIndex - 1] : null
-  const next = currentIndex < data.allWorks.length - 1 ? data.allWorks[currentIndex + 1] : null
+  const prev = currentIndex > 0 ? allWorks[currentIndex - 1] : null
+  const next = currentIndex < allWorks.length - 1 ? allWorks[currentIndex + 1] : null
   
   return { prev, next }
 }
