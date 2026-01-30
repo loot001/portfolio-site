@@ -14,14 +14,15 @@ export default function WorkContent({ work }: WorkContentProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  // Collect all images from content blocks and legacy images
+  // Determine if using content blocks or legacy
+  const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
+
+  // Collect images from ONE source only (content blocks OR legacy, not both)
   const allImages: { src: string; alt: string; caption?: string }[] = []
-  
-  // Track which content block images map to which lightbox index
   const imageIndexMap: { [key: string]: number } = {}
 
-  // Collect from content blocks (using pre-processed URLs)
-  if (work.contentBlocks) {
+  if (useContentBlocks) {
+    // Collect from content blocks only
     work.contentBlocks.forEach((block: any) => {
       if (block._type === 'imageBlock' && block.imageLargeUrl) {
         imageIndexMap[block._key] = allImages.length
@@ -32,10 +33,8 @@ export default function WorkContent({ work }: WorkContentProps) {
         })
       }
     })
-  }
-
-  // Collect from legacy images
-  if (work.images) {
+  } else if (work.images) {
+    // Collect from legacy images only
     work.images.forEach((image: any, index: number) => {
       if (image.asset?.url) {
         imageIndexMap[`legacy-${index}`] = allImages.length
@@ -110,8 +109,6 @@ export default function WorkContent({ work }: WorkContentProps) {
       normal: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>
     }
   }
-
-  const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
 
   return (
     <>
