@@ -27,7 +27,6 @@ const workBySlugQuery = groq`
     contentBlocks[] {
       _type,
       _key,
-      // Text block - portable text with work links expanded
       content[] {
         ...,
         markDefs[] {
@@ -46,14 +45,11 @@ const workBySlugQuery = groq`
           }
         }
       },
-      // Image block
       image { asset-> },
       alt,
       size,
-      // Video block
       platform,
       url,
-      // Shared
       caption
     },
     
@@ -72,14 +68,47 @@ const workBySlugQuery = groq`
   }
 `
 
+// Query to get previous and next works for navigation
+const navigationQuery = groq`
+{
+  "current": *[_type == "work" && slug.current == $slug][0] {
+    yearNumeric,
+    title
+  },
+  "allWorks": *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
+    "slug": slug.current,
+    title,
+    yearNumeric
+  }
+}
+`
+
 async function getWork(slug: string) {
   return await client.fetch(workBySlugQuery, { slug })
+}
+
+async function getNavigation(slug: string) {
+  const data = await client.fetch(navigationQuery, { slug })
+  
+  if (!data.allWorks || data.allWorks.length === 0) {
+    return { prev: null, next: null }
+  }
+  
+  const currentIndex = data.allWorks.findIndex((w: any) => w.slug === slug)
+  
+  if (currentIndex === -1) {
+    return { prev: null, next: null }
+  }
+  
+  const prev = currentIndex > 0 ? data.allWorks[currentIndex - 1] : null
+  const next = currentIndex < data.allWorks.length - 1 ? data.allWorks[currentIndex + 1] : null
+  
+  return { prev, next }
 }
 
 // Custom components for rendering Portable Text
 const portableTextComponents: PortableTextComponents = {
   marks: {
-    // External links
     link: ({ children, value }) => {
       const target = value?.openInNewTab ? '_blank' : undefined
       const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
@@ -94,7 +123,6 @@ const portableTextComponents: PortableTextComponents = {
         </a>
       )
     },
-    // Internal work links with hover preview
     workLink: ({ children, value }) => {
       const work = value?.work
       if (!work) {
@@ -107,7 +135,6 @@ const portableTextComponents: PortableTextComponents = {
           className="group relative inline-block text-blue-600 hover:text-blue-800 underline"
         >
           {children}
-          {/* Hover preview tooltip */}
           {work.thumbnail && (
             <span className="invisible group-hover:visible absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 pointer-events-none">
               <span className="block bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
@@ -144,17 +171,61 @@ export default async function WorkPage({
   params: Promise<{ slug: string }> 
 }) {
   const { slug } = await params
-  const work = await getWork(slug)
+  const [work, navigation] = await Promise.all([
+    getWork(slug),
+    getNavigation(slug)
+  ])
 
   if (!work) {
     notFound()
   }
 
-  // Check if using content blocks or legacy
   const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Previous/Next Navigation - Top */}
+      <nav className="flex justify-between items-center mb-8 text-sm">
+        <div className="w-1/3">
+          {navigation.prev && (
+            <Link 
+              href={`/works/${navigation.prev.slug}`}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="hidden sm:inline truncate max-w-[200px]">{navigation.prev.title}</span>
+              <span className="sm:hidden">Previous</span>
+            </Link>
+          )}
+        </div>
+        
+        <div className="w-1/3 text-center">
+          <Link 
+            href="/works"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            All Works
+          </Link>
+        </div>
+        
+        <div className="w-1/3 text-right">
+          {navigation.next && (
+            <Link 
+              href={`/works/${navigation.next.slug}`}
+              className="flex items-center justify-end gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <span className="hidden sm:inline truncate max-w-[200px]">{navigation.next.title}</span>
+              <span className="sm:hidden">Next</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )}
+        </div>
+      </nav>
+
       {/* Title and metadata */}
       <div className="mb-12">
         <h1 className="text-4xl font-bold mb-4">{work.title}</h1>
@@ -172,18 +243,15 @@ export default async function WorkPage({
       {useContentBlocks && (
         <div className="space-y-8 mb-12">
           {work.contentBlocks.map((block: any) => {
-            // Text Block - Rich Text or Legacy Plain Text
+            // Text Block
             if (block._type === 'textBlock') {
-              // Handle both old plain text and new portable text
               if (typeof block.content === 'string') {
-                // Legacy plain text
                 return (
                   <div key={block._key} className="prose max-w-none">
                     <p className="whitespace-pre-wrap">{block.content}</p>
                   </div>
                 )
               }
-              // New Portable Text (rich text)
               if (Array.isArray(block.content)) {
                 return (
                   <div key={block._key} className="prose max-w-none">
@@ -223,9 +291,8 @@ export default async function WorkPage({
               )
             }
             
-            // Video Block - with invisible character fix
+            // Video Block
             if (block._type === 'videoBlock') {
-              // Strip ALL non-printable/invisible characters (fixes Unicode pollution issue)
               const platform = String(block.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
               const url = String(block.url || '').replace(/[^\x20-\x7E]/g, '').trim()
               
@@ -275,17 +342,15 @@ export default async function WorkPage({
         </div>
       )}
 
-      {/* LEGACY LAYOUT (Fallback for old content) */}
+      {/* LEGACY LAYOUT (Fallback) */}
       {!useContentBlocks && (
         <>
-          {/* Description */}
           {work.description && (
             <div className="prose max-w-none mb-12">
               <p className="whitespace-pre-wrap">{work.description}</p>
             </div>
           )}
 
-          {/* Images */}
           {work.images && work.images.length > 0 && (
             <div className="space-y-8 mb-12">
               {work.images.map((image: any, index: number) => (
@@ -307,11 +372,9 @@ export default async function WorkPage({
             </div>
           )}
 
-          {/* Videos */}
           {work.videos && work.videos.length > 0 && (
             <div className="space-y-8 mb-12">
               {work.videos.map((video: any, index: number) => {
-                // Strip invisible characters from legacy videos too
                 const platform = String(video.platform || '').replace(/[^\x20-\x7E]/g, '').toLowerCase().trim()
                 const url = String(video.url || '').replace(/[^\x20-\x7E]/g, '').trim()
                 let embedUrl = ''
@@ -348,7 +411,7 @@ export default async function WorkPage({
         </>
       )}
 
-      {/* Additional metadata (always shown) */}
+      {/* Additional metadata */}
       {(work.themes || work.aiInvolved) && (
         <div className="border-t pt-8 mt-12 space-y-4">
           {work.themes && work.themes.length > 0 && (
@@ -377,6 +440,37 @@ export default async function WorkPage({
           )}
         </div>
       )}
+
+      {/* Previous/Next Navigation - Bottom */}
+      <nav className="flex justify-between items-center mt-16 pt-8 border-t">
+        <div className="w-1/2 pr-4">
+          {navigation.prev && (
+            <Link 
+              href={`/works/${navigation.prev.slug}`}
+              className="group block"
+            >
+              <span className="text-sm text-gray-500 group-hover:text-gray-700">← Previous</span>
+              <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                {navigation.prev.title}
+              </span>
+            </Link>
+          )}
+        </div>
+        
+        <div className="w-1/2 pl-4 text-right">
+          {navigation.next && (
+            <Link 
+              href={`/works/${navigation.next.slug}`}
+              className="group block"
+            >
+              <span className="text-sm text-gray-500 group-hover:text-gray-700">Next →</span>
+              <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                {navigation.next.title}
+              </span>
+            </Link>
+          )}
+        </div>
+      </nav>
     </div>
   )
 }

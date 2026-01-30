@@ -46,7 +46,7 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">Archive</h1>
+        <h1 className="text-4xl font-bold mb-4">Works</h1>
         <p className="text-gray-600">
           {filteredWorks.length} of {initialWorks.length} works • Sorted by newest first
         </p>
