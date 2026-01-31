@@ -6,7 +6,12 @@ import { groq } from 'next-sanity'
 export const revalidate = 60
 
 const projectsQuery = groq`
-  *[_type == "project" && defined(slug.current)] | order(year desc, title asc) {
+{
+  "settings": *[_type == "siteSettings"][0] {
+    projectsPageTitle,
+    projectsPageDescription
+  },
+  "projects": *[_type == "project" && defined(slug.current)] | order(year desc, title asc) {
     _id,
     title,
     "slug": slug.current,
@@ -19,22 +24,26 @@ const projectsQuery = groq`
     ),
     "workCount": count(includedWorks)
   }
+}
 `
 
-async function getProjects() {
+async function getProjectsData() {
   return await client.fetch(projectsQuery)
 }
 
 export default async function ProjectsPage() {
-  const projects = await getProjects()
+  const { settings, projects } = await getProjectsData()
+
+  const title = settings?.projectsPageTitle || 'Projects'
+  const description = settings?.projectsPageDescription || 'Curated presentations of related works, exhibitions, and ongoing series.'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">Projects</h1>
+        <h1 className="text-4xl font-bold mb-4">{title}</h1>
         <p className="text-gray-600 max-w-3xl">
-          Curated presentations of related works, exhibitions, and ongoing series.
+          {description}
         </p>
       </div>
 

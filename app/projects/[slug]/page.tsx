@@ -36,8 +36,35 @@ const projectBySlugQuery = groq`
   }
 `
 
+// Query to get all projects for navigation
+const allProjectsQuery = groq`
+  *[_type == "project" && defined(slug.current)] | order(year desc, title asc) {
+    "slug": slug.current,
+    title
+  }
+`
+
 async function getProject(slug: string) {
   return await client.fetch(projectBySlugQuery, { slug })
+}
+
+async function getNavigation(slug: string) {
+  const allProjects = await client.fetch(allProjectsQuery)
+  
+  if (!allProjects || allProjects.length === 0) {
+    return { prev: null, next: null }
+  }
+  
+  const currentIndex = allProjects.findIndex((p: any) => p.slug === slug)
+  
+  if (currentIndex === -1) {
+    return { prev: null, next: null }
+  }
+  
+  const prev = currentIndex > 0 ? allProjects[currentIndex - 1] : null
+  const next = currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : null
+  
+  return { prev, next }
 }
 
 export default async function ProjectPage({ 
@@ -46,7 +73,10 @@ export default async function ProjectPage({
   params: Promise<{ slug: string }> 
 }) {
   const { slug } = await params
-  const project = await getProject(slug)
+  const [project, navigation] = await Promise.all([
+    getProject(slug),
+    getNavigation(slug)
+  ])
 
   if (!project) {
     notFound()
@@ -54,18 +84,44 @@ export default async function ProjectPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Back link */}
-      <div className="mb-8">
-        <Link 
-          href="/projects"
-          className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          All Projects
-        </Link>
-      </div>
+      {/* Top Navigation */}
+      <nav className="flex justify-between items-center mb-8 text-sm">
+        <div className="w-1/3">
+          {navigation.prev && (
+            <Link 
+              href={`/projects/${navigation.prev.slug}`}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="hidden sm:inline truncate max-w-[200px]">{navigation.prev.title}</span>
+              <span className="sm:hidden">Previous</span>
+            </Link>
+          )}
+        </div>
+        
+        <div className="w-1/3 text-center">
+          <Link href="/projects" className="text-gray-600 hover:text-gray-900 transition-colors">
+            All Projects
+          </Link>
+        </div>
+        
+        <div className="w-1/3 text-right">
+          {navigation.next && (
+            <Link 
+              href={`/projects/${navigation.next.slug}`}
+              className="flex items-center justify-end gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <span className="hidden sm:inline truncate max-w-[200px]">{navigation.next.title}</span>
+              <span className="sm:hidden">Next</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )}
+        </div>
+      </nav>
 
       {/* Project Header */}
       <div className="mb-12">
@@ -158,6 +214,31 @@ export default async function ProjectPage({
           No works have been added to this project yet.
         </div>
       )}
+
+      {/* Bottom Navigation */}
+      <nav className="flex justify-between items-center mt-16 pt-8 border-t">
+        <div className="w-1/2 pr-4">
+          {navigation.prev && (
+            <Link href={`/projects/${navigation.prev.slug}`} className="group block">
+              <span className="text-sm text-gray-500 group-hover:text-gray-700">← Previous Project</span>
+              <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                {navigation.prev.title}
+              </span>
+            </Link>
+          )}
+        </div>
+        
+        <div className="w-1/2 pl-4 text-right">
+          {navigation.next && (
+            <Link href={`/projects/${navigation.next.slug}`} className="group block">
+              <span className="text-sm text-gray-500 group-hover:text-gray-700">Next Project →</span>
+              <span className="block text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                {navigation.next.title}
+              </span>
+            </Link>
+          )}
+        </div>
+      </nav>
     </div>
   )
 }
