@@ -11,20 +11,25 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
 
   // Get unique types for filters
   const workTypes = useMemo(() => {
-    const types = new Set<string>()
+    const types: string[] = []
     initialWorks.forEach(w => {
-      if (w.workType) types.add(w.workType)
+      if (w.workType && !types.includes(w.workType)) {
+        types.push(w.workType)
+      }
     })
-    return Array.from(types).sort()
+    return types.sort()
   }, [initialWorks])
 
-  // Get unique years for filters (fixed - no duplicates)
+  // Get unique years for filters - properly deduplicated
   const years = useMemo(() => {
-    const yearSet = new Set<string>()
+    const uniqueYears: string[] = []
     initialWorks.forEach(w => {
-      if (w.year) yearSet.add(w.year)
+      const year = w.year?.toString().trim()
+      if (year && !uniqueYears.includes(year)) {
+        uniqueYears.push(year)
+      }
     })
-    return Array.from(yearSet).sort().reverse()
+    return uniqueYears.sort().reverse()
   }, [initialWorks])
 
   // Filter works based on search and filters
