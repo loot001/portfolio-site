@@ -4,6 +4,12 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+// Strip invisible characters (same fix we used for Vimeo URLs)
+function cleanString(str: any): string {
+  if (!str) return ''
+  return String(str).replace(/[^\x20-\x7E]/g, '').trim()
+}
+
 export default function WorksArchiveClient({ works: initialWorks }: { works: any[] }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedType, setSelectedType] = useState('all')
@@ -13,18 +19,19 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
   const workTypes = useMemo(() => {
     const types: string[] = []
     initialWorks.forEach(w => {
-      if (w.workType && !types.includes(w.workType)) {
-        types.push(w.workType)
+      const type = cleanString(w.workType)
+      if (type && !types.includes(type)) {
+        types.push(type)
       }
     })
     return types.sort()
   }, [initialWorks])
 
-  // Get unique years for filters - properly deduplicated
+  // Get unique years for filters - strip invisible characters
   const years = useMemo(() => {
     const uniqueYears: string[] = []
     initialWorks.forEach(w => {
-      const year = w.year?.toString().trim()
+      const year = cleanString(w.year)
       if (year && !uniqueYears.includes(year)) {
         uniqueYears.push(year)
       }
@@ -46,10 +53,10 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
         ))
 
       // Type filter
-      const matchesType = selectedType === 'all' || work.workType === selectedType
+      const matchesType = selectedType === 'all' || cleanString(work.workType) === selectedType
 
       // Year filter
-      const matchesYear = selectedYear === 'all' || work.year === selectedYear
+      const matchesYear = selectedYear === 'all' || cleanString(work.year) === selectedYear
 
       return matchesSearch && matchesType && matchesYear
     })
