@@ -16,7 +16,7 @@ const workBySlugQuery = groq`
     year,
     yearNumeric,
     workType,
-    materials,
+    "materials": materials[]->name,
     dimensions,
     sizeCategory,
     themes,

@@ -15,7 +15,7 @@ const worksArchiveQuery = groq`
     monthNumeric,
     dayNumeric,
     workType,
-    materials,
+    "materials": materials[]->name,
     dimensions,
     themes,
     aiInvolved,
