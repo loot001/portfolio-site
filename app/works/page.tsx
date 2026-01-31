@@ -4,14 +4,16 @@ import WorksArchiveClient from './WorksArchiveClient'
 
 export const revalidate = 60
 
-// This query does NOT use $slug - it fetches all works
+// Sort by year, then month, then day (all descending for newest first)
 const worksArchiveQuery = groq`
-  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
+  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, monthNumeric desc, dayNumeric desc, title asc) {
     _id,
     title,
     slug,
     year,
     yearNumeric,
+    monthNumeric,
+    dayNumeric,
     workType,
     materials,
     dimensions,

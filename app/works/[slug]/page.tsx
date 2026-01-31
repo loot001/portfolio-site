@@ -70,7 +70,7 @@ const workBySlugQuery = groq`
 `
 
 const allWorksQuery = groq`
-  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
+  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, monthNumeric desc, dayNumeric desc, title asc) {
     "slug": slug.current,
     title
   }
