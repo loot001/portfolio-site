@@ -3,6 +3,8 @@ import { client, urlFor } from '@/lib/sanity.client'
 import { notFound } from 'next/navigation'
 import { groq } from 'next-sanity'
 import WorkContent from './WorkContent'
+import { siteConfig } from '@/lib/metadata'
+import type { Metadata } from 'next'
 
 export const revalidate = 60
 
@@ -18,9 +20,15 @@ const workBySlugQuery = groq`
     dimensions,
     sizeCategory,
     themes,
+    description,
     aiInvolved,
     aiRole,
     aiTools,
+    "thumbnail": coalesce(
+      thumbnail.asset->url,
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
+    ),
     contentBlocks[] {
       _type,
       _key,
@@ -56,7 +64,6 @@ const workBySlugQuery = groq`
       alt
     },
     videos,
-    description,
     currentLocation,
     status
   }
@@ -90,6 +97,67 @@ async function getNavigation(slug: string) {
   const next = currentIndex < allWorks.length - 1 ? allWorks[currentIndex + 1] : null
   
   return { prev, next }
+}
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}): Promise<Metadata> {
+  const { slug } = await params
+  const work = await getWork(slug)
+  
+  if (!work) {
+    return {
+      title: 'Work Not Found'
+    }
+  }
+
+  const title = `${work.title}${work.year ? `, ${work.year}` : ''}`
+  
+  // Build description from available data
+  let description = ''
+  if (work.workType) description += `${work.workType}. `
+  if (work.materials && work.materials.length > 0) {
+    description += `${work.materials.join(', ')}. `
+  }
+  if (work.dimensions) description += `${work.dimensions}. `
+  if (work.description) {
+    description += work.description.substring(0, 150)
+  }
+  if (!description) {
+    description = `Artwork by ${siteConfig.name}`
+  }
+
+  const ogImage = work.thumbnail 
+    ? `${work.thumbnail}?w=1200&h=630&fit=crop`
+    : `${siteConfig.url}${siteConfig.ogImage}`
+
+  return {
+    title,
+    description: description.trim(),
+    openGraph: {
+      title: `${title} | ${siteConfig.name}`,
+      description: description.trim(),
+      type: 'article',
+      url: `${siteConfig.url}/works/${slug}`,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: work.title
+        }
+      ]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | ${siteConfig.name}`,
+      description: description.trim(),
+      images: [ogImage]
+    }
+  }
 }
 
 export default async function WorkPage({ 

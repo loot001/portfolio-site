@@ -4,6 +4,8 @@ import { client } from '@/lib/sanity.client'
 import { notFound } from 'next/navigation'
 import { groq } from 'next-sanity'
 import { PortableText } from '@portabletext/react'
+import { siteConfig } from '@/lib/metadata'
+import type { Metadata } from 'next'
 
 export const revalidate = 60
 
@@ -16,6 +18,10 @@ const projectBySlugQuery = groq`
     projectType,
     excerpt,
     statement,
+    "thumbnail": coalesce(
+      featuredImage.asset->url,
+      projectImages[0].asset->url
+    ),
     featuredImage {
       asset->,
       alt,
@@ -36,7 +42,6 @@ const projectBySlugQuery = groq`
   }
 `
 
-// Query to get all projects for navigation
 const allProjectsQuery = groq`
   *[_type == "project" && defined(slug.current)] | order(year desc, title asc) {
     "slug": slug.current,
@@ -65,6 +70,54 @@ async function getNavigation(slug: string) {
   const next = currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : null
   
   return { prev, next }
+}
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}): Promise<Metadata> {
+  const { slug } = await params
+  const project = await getProject(slug)
+  
+  if (!project) {
+    return {
+      title: 'Project Not Found'
+    }
+  }
+
+  const title = `${project.title}${project.year ? `, ${project.year}` : ''}`
+  const description = project.excerpt || `Art project by ${siteConfig.name}`
+  
+  const ogImage = project.thumbnail 
+    ? `${project.thumbnail}?w=1200&h=630&fit=crop`
+    : `${siteConfig.url}${siteConfig.ogImage}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      type: 'article',
+      url: `${siteConfig.url}/projects/${slug}`,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: project.title
+        }
+      ]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | ${siteConfig.name}`,
+      description,
+      images: [ogImage]
+    }
+  }
 }
 
 export default async function ProjectPage({ 
