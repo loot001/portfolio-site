@@ -9,14 +9,21 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
   const [selectedType, setSelectedType] = useState('all')
   const [selectedYear, setSelectedYear] = useState('all')
 
-  // Get unique types and years for filters
+  // Get unique types for filters
   const workTypes = useMemo(() => {
-    const types = new Set(initialWorks.map(w => w.workType).filter(Boolean))
+    const types = new Set<string>()
+    initialWorks.forEach(w => {
+      if (w.workType) types.add(w.workType)
+    })
     return Array.from(types).sort()
   }, [initialWorks])
 
+  // Get unique years for filters (fixed - no duplicates)
   const years = useMemo(() => {
-    const yearSet = new Set(initialWorks.map(w => w.year).filter(Boolean))
+    const yearSet = new Set<string>()
+    initialWorks.forEach(w => {
+      if (w.year) yearSet.add(w.year)
+    })
     return Array.from(yearSet).sort().reverse()
   }, [initialWorks])
 
