@@ -1,11 +1,11 @@
 // app/works/WorksArchiveClient.tsx
-// Updated with responsive SanityImage for optimal image delivery
+// Works archive with search/filter functionality
 
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useMemo } from 'react'
-import SanityImage from '@/components/SanityImage'
 
 interface Work {
   _id: string
@@ -14,14 +14,11 @@ interface Work {
   year: string
   yearNumeric: number
   workType?: string
-  materials?: string
+  materials?: string[]
   themes?: string[]
   aiInvolved?: boolean
-  // Image data from Sanity (full reference, not just URL)
-  thumbnailImage?: any
-  thumbnailAlt?: string
-  // Fallback: URL string for backward compatibility
   thumbnail?: string
+  thumbnailAlt?: string
 }
 
 interface WorksArchiveClientProps {
@@ -61,10 +58,17 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
       if (searchTerm) {
         const search = searchTerm.toLowerCase()
         const matchesTitle = work.title?.toLowerCase().includes(search)
-        const matchesMaterials = work.materials?.toLowerCase().includes(search)
-        const matchesThemes = work.themes?.some(t => 
-          typeof t === 'string' && t.toLowerCase().includes(search)
-        )
+        
+        // Handle materials as array of strings
+        const matchesMaterials = Array.isArray(work.materials)
+          ? work.materials.some(m => typeof m === 'string' && m.toLowerCase().includes(search))
+          : false
+        
+        // Handle themes as array of strings
+        const matchesThemes = Array.isArray(work.themes)
+          ? work.themes.some(t => typeof t === 'string' && t.toLowerCase().includes(search))
+          : false
+        
         if (!matchesTitle && !matchesMaterials && !matchesThemes) return false
       }
 
@@ -159,25 +163,15 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
           >
             {/* Thumbnail */}
             <div className="aspect-square bg-gray-100 mb-3 overflow-hidden relative">
-              {work.thumbnailImage?.asset ? (
-                // Use new SanityImage component for responsive delivery
-                <SanityImage
-                  image={work.thumbnailImage}
-                  alt={work.thumbnailAlt || work.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : work.thumbnail ? (
-                // Fallback for URL-only thumbnails (backward compatibility)
-                <img
+              {work.thumbnail ? (
+                <Image
                   src={`${work.thumbnail}?w=600&h=600&fit=crop&auto=format`}
                   alt={work.thumbnailAlt || work.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               ) : (
-                // Placeholder
                 <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                   <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 

@@ -1,5 +1,5 @@
 // app/works/page.tsx
-// Works archive with responsive image delivery
+// Works archive page
 
 import { client } from '@/lib/sanity.client'
 import { groq } from 'next-sanity'
@@ -7,8 +7,7 @@ import WorksArchiveClient from './WorksArchiveClient'
 
 export const revalidate = 60
 
-// Query with FULL image references for responsive srcset generation
-// Instead of just URLs, we fetch the asset reference so SanityImage can build srcsets
+// Simplified query - just fetch URLs directly (this was working before)
 const worksArchiveQuery = groq`
   *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
     _id,
@@ -17,32 +16,24 @@ const worksArchiveQuery = groq`
     year,
     yearNumeric,
     workType,
-    materials,
+    "materials": materials[]->name,
     dimensions,
     themes,
     aiInvolved,
     
-    // Full image reference for responsive delivery
-    // Priority: dedicated thumbnail → first content block image → first legacy image
-    "thumbnailImage": coalesce(
-      thumbnail,
-      contentBlocks[_type == "imageBlock"][0].image,
-      images[0]
+    // Thumbnail URL with fallback chain
+    "thumbnail": coalesce(
+      thumbnail.asset->url,
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
     ),
     
-    // Alt text fallback chain
+    // Alt text fallback
     "thumbnailAlt": coalesce(
       thumbnail.asset->altText,
       contentBlocks[_type == "imageBlock"][0].alt,
       images[0].alt,
       title
-    ),
-    
-    // Keep URL as fallback for backward compatibility
-    "thumbnail": coalesce(
-      thumbnail.asset->url,
-      contentBlocks[_type == "imageBlock"][0].image.asset->url,
-      images[0].asset->url
     )
   }
 `
