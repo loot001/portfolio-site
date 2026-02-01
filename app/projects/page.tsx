@@ -1,7 +1,10 @@
-import Image from 'next/image'
+// app/projects/page.tsx
+// Projects grid with responsive image delivery
+
 import Link from 'next/link'
 import { client } from '@/lib/sanity.client'
 import { groq } from 'next-sanity'
+import SanityImage from '@/components/SanityImage'
 
 export const revalidate = 60
 
@@ -18,10 +21,19 @@ const projectsQuery = groq`
     year,
     projectType,
     excerpt,
+    
+    // Full image reference for responsive delivery
+    "thumbnailImage": coalesce(
+      featuredImage,
+      projectImages[0]
+    ),
+    
+    // URL fallback for backward compatibility
     "thumbnail": coalesce(
       featuredImage.asset->url,
       projectImages[0].asset->url
     ),
+    
     "workCount": count(includedWorks)
   }
 }
@@ -35,16 +47,15 @@ export default async function ProjectsPage() {
   const { settings, projects } = await getProjectsData()
 
   const title = settings?.projectsPageTitle || 'Projects'
-  const description = settings?.projectsPageDescription || 'Curated presentations of related works, exhibitions, and ongoing series.'
+  const description = settings?.projectsPageDescription || 
+    'Curated presentations of related works, exhibitions, and ongoing series.'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-12">
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
-        <p className="text-gray-600 max-w-3xl">
-          {description}
-        </p>
+        <p className="text-gray-600 max-w-3xl">{description}</p>
       </div>
 
       {/* Projects Grid */}
@@ -53,21 +64,30 @@ export default async function ProjectsPage() {
           <Link 
             key={project._id} 
             href={`/projects/${project.slug}`}
-            className="group"
+            className="group block"
           >
-            <div className="aspect-square bg-gray-100 mb-3 overflow-hidden">
-              {project.thumbnail ? (
-                <Image
-                  src={`${project.thumbnail}?w=600&h=600&fit=crop`}
+            <div className="aspect-square bg-gray-100 mb-3 overflow-hidden relative">
+              {project.thumbnailImage?.asset ? (
+                <SanityImage
+                  image={project.thumbnailImage}
                   alt={project.title}
-                  width={600}
-                  height={600}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : project.thumbnail ? (
+                <img
+                  src={`${project.thumbnail}?w=600&h=600&fit=crop&auto=format`}
+                  alt={project.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                   <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" 
+                    />
                   </svg>
                 </div>
               )}

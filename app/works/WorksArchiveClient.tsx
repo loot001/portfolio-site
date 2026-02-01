@@ -1,107 +1,120 @@
+// app/works/WorksArchiveClient.tsx
+// Updated with responsive SanityImage for optimal image delivery
+
 'use client'
 
-import { useState, useMemo } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
+import { useState, useMemo } from 'react'
+import SanityImage from '@/components/SanityImage'
 
-// Strip invisible characters
-function cleanString(str: any): string {
-  if (!str) return ''
-  return String(str).replace(/[^\x20-\x7E]/g, '').trim()
+interface Work {
+  _id: string
+  title: string
+  slug: { current: string }
+  year: string
+  yearNumeric: number
+  workType?: string
+  materials?: string
+  themes?: string[]
+  aiInvolved?: boolean
+  // Image data from Sanity (full reference, not just URL)
+  thumbnailImage?: any
+  thumbnailAlt?: string
+  // Fallback: URL string for backward compatibility
+  thumbnail?: string
 }
 
-export default function WorksArchiveClient({ works: initialWorks }: { works: any[] }) {
+interface WorksArchiveClientProps {
+  works: Work[]
+}
+
+export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedType, setSelectedType] = useState('all')
   const [selectedYear, setSelectedYear] = useState('all')
 
-  // Get unique types for filters
+  // Extract unique types and years for filters
   const workTypes = useMemo(() => {
-    const types: string[] = []
-    initialWorks.forEach(w => {
-      const type = cleanString(w.workType)
-      if (type && !types.includes(type)) {
-        types.push(type)
-      }
+    const types = new Set<string>()
+    works.forEach(work => {
+      if (work.workType) types.add(work.workType)
     })
-    return types.sort()
-  }, [initialWorks])
+    return Array.from(types).sort()
+  }, [works])
 
-  // Get unique years for filters - strip invisible characters
   const years = useMemo(() => {
-    const uniqueYears: string[] = []
-    initialWorks.forEach(w => {
-      const year = cleanString(w.year)
-      if (year && !uniqueYears.includes(year)) {
-        uniqueYears.push(year)
+    const yearSet = new Set<string>()
+    works.forEach(work => {
+      if (work.year) {
+        // Strip invisible characters
+        const cleanYear = work.year.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim()
+        yearSet.add(cleanYear)
       }
     })
-    return uniqueYears.sort().reverse()
-  }, [initialWorks])
+    return Array.from(yearSet).sort().reverse()
+  }, [works])
 
-  // Filter works based on search and filters
+  // Filter works
   const filteredWorks = useMemo(() => {
-    return initialWorks.filter(work => {
+    return works.filter(work => {
       // Search filter
-      const searchLower = searchTerm.toLowerCase()
-      const titleMatch = work.title?.toLowerCase().includes(searchLower) || false
-      
-      // Materials are now an array of strings (dereferenced in query) or null
-      const materialsMatch = Array.isArray(work.materials) && work.materials.some((m: any) => 
-        m && typeof m === 'string' && m.toLowerCase().includes(searchLower)
-      )
-      
-      // Themes
-      const themesMatch = Array.isArray(work.themes) && work.themes.some((t: any) => 
-        t && typeof t === 'string' && t.toLowerCase().includes(searchLower)
-      )
-      
-      const matchesSearch = searchTerm === '' || titleMatch || materialsMatch || themesMatch
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase()
+        const matchesTitle = work.title?.toLowerCase().includes(search)
+        const matchesMaterials = work.materials?.toLowerCase().includes(search)
+        const matchesThemes = work.themes?.some(t => 
+          typeof t === 'string' && t.toLowerCase().includes(search)
+        )
+        if (!matchesTitle && !matchesMaterials && !matchesThemes) return false
+      }
 
       // Type filter
-      const matchesType = selectedType === 'all' || cleanString(work.workType) === selectedType
+      if (selectedType !== 'all' && work.workType !== selectedType) return false
 
       // Year filter
-      const matchesYear = selectedYear === 'all' || cleanString(work.year) === selectedYear
+      if (selectedYear !== 'all') {
+        const cleanWorkYear = work.year?.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim()
+        if (cleanWorkYear !== selectedYear) return false
+      }
 
-      return matchesSearch && matchesType && matchesYear
+      return true
     })
-  }, [initialWorks, searchTerm, selectedType, selectedYear])
+  }, [works, searchTerm, selectedType, selectedYear])
+
+  const hasFilters = searchTerm || selectedType !== 'all' || selectedYear !== 'all'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">Works</h1>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-2">Works</h1>
         <p className="text-gray-600">
-          {filteredWorks.length} of {initialWorks.length} works • Sorted by newest first
+          {filteredWorks.length} of {works.length} works
         </p>
       </div>
 
-      {/* Search and Filters */}
+      {/* Filters */}
       <div className="mb-8 space-y-4">
-        {/* Search Box */}
-        <div>
+        <div className="flex flex-wrap gap-4 items-center">
+          {/* Search */}
           <input
             type="text"
-            placeholder="Search by title, materials, or themes..."
+            placeholder="Search works..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 w-full sm:w-64"
           />
-        </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4">
           {/* Type Filter */}
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="all">All Types</option>
             {workTypes.map(type => (
-              <option key={type} value={type} className="capitalize">
-                {type}
+              <option key={type} value={type}>
+                {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
               </option>
             ))}
           </select>
@@ -110,7 +123,7 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="all">All Years</option>
             {years.map(year => (
@@ -121,14 +134,14 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
           </select>
 
           {/* Clear Filters */}
-          {(searchTerm || selectedType !== 'all' || selectedYear !== 'all') && (
+          {hasFilters && (
             <button
               onClick={() => {
                 setSearchTerm('')
                 setSelectedType('all')
                 setSelectedYear('all')
               }}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900"
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               Clear Filters
             </button>
@@ -137,34 +150,59 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
       </div>
 
       {/* Works Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredWorks.map((work: any) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredWorks.map((work) => (
           <Link 
             key={work._id} 
             href={`/works/${work.slug.current}`}
-            className="group"
+            className="group block"
           >
-            <div className="aspect-square bg-gray-100 mb-3 overflow-hidden">
-              {work.thumbnail && (
-                <Image
-                  src={work.thumbnail}
+            {/* Thumbnail */}
+            <div className="aspect-square bg-gray-100 mb-3 overflow-hidden relative">
+              {work.thumbnailImage?.asset ? (
+                // Use new SanityImage component for responsive delivery
+                <SanityImage
+                  image={work.thumbnailImage}
                   alt={work.thumbnailAlt || work.title}
-                  width={600}
-                  height={600}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
+              ) : work.thumbnail ? (
+                // Fallback for URL-only thumbnails (backward compatibility)
+                <img
+                  src={`${work.thumbnail}?w=600&h=600&fit=crop&auto=format`}
+                  alt={work.thumbnailAlt || work.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+              ) : (
+                // Placeholder
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                    />
+                  </svg>
+                </div>
               )}
             </div>
-            <h3 className="font-medium">{work.title}</h3>
+            
+            {/* Info */}
+            <h3 className="font-medium group-hover:text-gray-600 transition-colors">
+              {work.title}
+            </h3>
             <div className="text-sm text-gray-600">
               <p>{work.year}</p>
-              {work.workType && <p className="capitalize">{work.workType}</p>}
+              {work.workType && (
+                <p className="capitalize">{work.workType.replace('-', ' ')}</p>
+              )}
             </div>
           </Link>
         ))}
       </div>
 
-      {/* No results message */}
+      {/* No results */}
       {filteredWorks.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           No works found matching your search criteria.

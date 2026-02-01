@@ -1,7 +1,10 @@
+// components/ContentBlocks.tsx
+// Updated content blocks renderer with responsive image delivery
+
 'use client'
 
-import Image from 'next/image'
-import { urlFor } from '@/lib/sanity.client'
+import SanityImage, { getSanityImageUrl } from './SanityImage'
+import { useState } from 'react'
 
 interface ContentBlocksProps {
   blocks: any[]
@@ -13,7 +16,7 @@ export default function ContentBlocks({ blocks }: ContentBlocksProps) {
   return (
     <div className="space-y-12">
       {blocks.map((block, index) => (
-        <div key={index}>
+        <div key={block._key || index}>
           {renderBlock(block)}
         </div>
       ))}
@@ -46,7 +49,9 @@ function renderBlock(block: any) {
   }
 }
 
-// Text Block Component
+// ============================================
+// Text Block
+// ============================================
 function TextBlock({ content }: { content: string }) {
   return (
     <div className="prose max-w-none">
@@ -55,8 +60,12 @@ function TextBlock({ content }: { content: string }) {
   )
 }
 
-// Single Image Block Component
+// ============================================
+// Single Image Block - with lightbox
+// ============================================
 function ImageBlock({ block }: { block: any }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
   const sizeClasses = {
     full: 'w-full',
     large: 'w-4/5 mx-auto',
@@ -64,75 +73,129 @@ function ImageBlock({ block }: { block: any }) {
     small: 'w-2/5 mx-auto'
   }
 
+  // Responsive sizes based on display size
+  const sizesMap = {
+    full: '100vw',
+    large: '80vw',
+    medium: '60vw',
+    small: '40vw'
+  }
+
+  const displaySize = (block.size as keyof typeof sizeClasses) || 'full'
+
   return (
-    <div className={sizeClasses[block.size as keyof typeof sizeClasses] || 'w-full'}>
-      <Image
-        src={urlFor(block.image).width(1200).url()}
-        alt={block.alt || block.title || ''}
-        width={1200}
-        height={800}
-        className="w-full h-auto"
-      />
-      {(block.title || block.caption) && (
-        <div className="mt-2 text-sm text-gray-600">
-          {block.title && <p className="font-medium">{block.title}</p>}
-          {block.caption && <p>{block.caption}</p>}
-        </div>
+    <>
+      <figure className={sizeClasses[displaySize]}>
+        <SanityImage
+          image={block.image}
+          alt={block.alt || block.title || ''}
+          sizes={sizesMap[displaySize]}
+          className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
+          onClick={() => setLightboxOpen(true)}
+        />
+        {(block.title || block.caption) && (
+          <figcaption className="mt-2 text-sm text-gray-600">
+            {block.title && <p className="font-medium">{block.title}</p>}
+            {block.caption && <p>{block.caption}</p>}
+          </figcaption>
+        )}
+      </figure>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <Lightbox
+          image={block.image}
+          alt={block.alt || block.title || ''}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
-    </div>
+    </>
   )
 }
 
-// Image Gallery Block Component
+// ============================================
+// Gallery Block
+// ============================================
 function GalleryBlock({ block }: { block: any }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
   const layoutClasses = {
-    'grid-2': 'grid-cols-2',
-    'grid-3': 'grid-cols-3',
-    'grid-4': 'grid-cols-4',
-    'carousel': 'flex overflow-x-auto gap-4 snap-x'
+    'grid-2': 'grid-cols-1 sm:grid-cols-2',
+    'grid-3': 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+    'grid-4': 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
+    'carousel': 'flex overflow-x-auto gap-4 snap-x snap-mandatory'
   }
 
-  const layout = block.layout || 'grid-3'
+  // Sizes for grid layouts
+  const sizesMap = {
+    'grid-2': '(max-width: 640px) 100vw, 50vw',
+    'grid-3': '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw',
+    'grid-4': '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
+    'carousel': '80vw'
+  }
+
+  const layout = (block.layout as keyof typeof layoutClasses) || 'grid-3'
   const isCarousel = layout === 'carousel'
 
   return (
-    <div>
-      <div className={`${isCarousel ? layoutClasses.carousel : `grid ${layoutClasses[layout as keyof typeof layoutClasses]} gap-4`}`}>
-        {block.images?.map((image: any, idx: number) => (
-          <div key={idx} className={isCarousel ? 'flex-none w-96 snap-center' : ''}>
-            <Image
-              src={urlFor(image).width(600).url()}
-              alt={image.alt || image.title || ''}
-              width={600}
-              height={400}
-              className="w-full h-auto"
+    <>
+      <div className={isCarousel ? layoutClasses.carousel : `grid ${layoutClasses[layout]} gap-4`}>
+        {block.images?.map((item: any, idx: number) => (
+          <div 
+            key={item._key || idx} 
+            className={isCarousel ? 'flex-shrink-0 w-4/5 snap-center' : 'relative aspect-[4/3]'}
+          >
+            <SanityImage
+              image={item.image || item}
+              alt={item.alt || item.caption || ''}
+              sizes={sizesMap[layout]}
+              fill={!isCarousel}
+              className={`
+                ${isCarousel ? 'w-full h-auto' : 'object-cover'}
+                cursor-pointer hover:opacity-95 transition-opacity
+              `}
+              onClick={() => setLightboxIndex(idx)}
             />
-            {(image.title || image.caption) && (
-              <div className="mt-2 text-sm text-gray-600">
-                {image.title && <p className="font-medium">{image.title}</p>}
-                {image.caption && <p>{image.caption}</p>}
-              </div>
+            {item.caption && !isCarousel && (
+              <p className="mt-1 text-xs text-gray-500 truncate">{item.caption}</p>
             )}
           </div>
         ))}
       </div>
-      {block.caption && (
-        <p className="mt-4 text-sm text-gray-600 text-center italic">{block.caption}</p>
+
+      {/* Gallery Lightbox with navigation */}
+      {lightboxIndex !== null && block.images && (
+        <GalleryLightbox
+          images={block.images}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
       )}
-    </div>
+    </>
   )
 }
 
-// Video Block Component
+// ============================================
+// Video Block
+// ============================================
 function VideoBlock({ block }: { block: any }) {
-  const getVideoEmbedUrl = (platform: string, url: string) => {
-    if (platform === 'vimeo') {
-      const videoId = url.split('/').pop()?.split('?')[0]
+  const getVideoEmbedUrl = (platform: string, url: string): string => {
+    if (!url) return ''
+    
+    // Normalize platform check (handle case sensitivity)
+    const normalizedPlatform = platform?.toLowerCase()
+    
+    if (normalizedPlatform === 'vimeo') {
+      // Extract video ID from various Vimeo URL formats
+      const cleanUrl = url.replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove invisible chars
+      const videoId = cleanUrl.split('/').pop()?.split('?')[0]
       return `https://player.vimeo.com/video/${videoId}`
-    } else if (platform === 'youtube') {
-      const videoId = url.includes('v=') 
-        ? url.split('v=')[1]?.split('&')[0]
-        : url.split('/').pop()
+    } else if (normalizedPlatform === 'youtube') {
+      const cleanUrl = url.replace(/[\u200B-\u200D\uFEFF]/g, '')
+      const videoId = cleanUrl.includes('v=') 
+        ? cleanUrl.split('v=')[1]?.split('&')[0]
+        : cleanUrl.split('/').pop()?.split('?')[0]
       return `https://www.youtube.com/embed/${videoId}`
     }
     return url
@@ -141,24 +204,27 @@ function VideoBlock({ block }: { block: any }) {
   const embedUrl = getVideoEmbedUrl(block.platform, block.url)
 
   return (
-    <div>
-      <div className="aspect-video">
+    <figure>
+      <div className="aspect-video bg-black">
         <iframe
           src={embedUrl}
           className="w-full h-full"
           frameBorder="0"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+          loading="lazy"
         />
       </div>
       {block.caption && (
-        <p className="mt-2 text-sm text-gray-600">{block.caption}</p>
+        <figcaption className="mt-2 text-sm text-gray-600">{block.caption}</figcaption>
       )}
-    </div>
+    </figure>
   )
 }
 
-// Quote Block Component
+// ============================================
+// Quote Block
+// ============================================
 function QuoteBlock({ block }: { block: any }) {
   return (
     <blockquote className="border-l-4 border-gray-300 pl-6 py-4 my-8">
@@ -170,38 +236,163 @@ function QuoteBlock({ block }: { block: any }) {
   )
 }
 
-// Two Column Block Component
+// ============================================
+// Two Column Block
+// ============================================
 function TwoColumnBlock({ block }: { block: any }) {
+  const renderColumn = (column: any) => {
+    if (!column) return null
+    
+    if (column.type === 'text') {
+      return <p className="whitespace-pre-wrap">{column.text}</p>
+    }
+    
+    if (column.type === 'image' && column.image) {
+      return (
+        <SanityImage
+          image={column.image}
+          alt={column.alt || ''}
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="w-full h-auto"
+        />
+      )
+    }
+    
+    return null
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-8">
-      <div>
-        {block.leftColumn?.type === 'text' && (
-          <p className="whitespace-pre-wrap">{block.leftColumn.text}</p>
-        )}
-        {block.leftColumn?.type === 'image' && block.leftColumn.image && (
-          <Image
-            src={urlFor(block.leftColumn.image).width(600).url()}
-            alt=""
-            width={600}
-            height={400}
-            className="w-full h-auto"
-          />
-        )}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div>{renderColumn(block.leftColumn)}</div>
+      <div>{renderColumn(block.rightColumn)}</div>
+    </div>
+  )
+}
+
+// ============================================
+// Lightbox Component
+// ============================================
+function Lightbox({ 
+  image, 
+  alt, 
+  onClose 
+}: { 
+  image: any
+  alt: string
+  onClose: () => void 
+}) {
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button 
+        className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+        onClick={onClose}
+        aria-label="Close lightbox"
+      >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <img
+        src={getSanityImageUrl(image, { width: 2400, quality: 90 })}
+        alt={alt}
+        className="max-h-[90vh] max-w-[90vw] object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  )
+}
+
+// ============================================
+// Gallery Lightbox with Navigation
+// ============================================
+function GalleryLightbox({
+  images,
+  currentIndex,
+  onClose,
+  onNavigate
+}: {
+  images: any[]
+  currentIndex: number
+  onClose: () => void
+  onNavigate: (index: number) => void
+}) {
+  const currentImage = images[currentIndex]
+  const hasPrev = currentIndex > 0
+  const hasNext = currentIndex < images.length - 1
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()
+    if (e.key === 'ArrowLeft' && hasPrev) onNavigate(currentIndex - 1)
+    if (e.key === 'ArrowRight' && hasNext) onNavigate(currentIndex + 1)
+  }
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+    >
+      {/* Close button */}
+      <button 
+        className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+        onClick={onClose}
+        aria-label="Close"
+      >
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      {/* Previous button */}
+      {hasPrev && (
+        <button
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-10 p-2"
+          onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1) }}
+          aria-label="Previous image"
+        >
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        src={getSanityImageUrl(currentImage.image || currentImage, { width: 2400, quality: 90 })}
+        alt={currentImage.alt || currentImage.caption || ''}
+        className="max-h-[85vh] max-w-[85vw] object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {/* Next button */}
+      {hasNext && (
+        <button
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-10 p-2"
+          onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1) }}
+          aria-label="Next image"
+        >
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      {/* Counter */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm">
+        {currentIndex + 1} / {images.length}
       </div>
-      <div>
-        {block.rightColumn?.type === 'text' && (
-          <p className="whitespace-pre-wrap">{block.rightColumn.text}</p>
-        )}
-        {block.rightColumn?.type === 'image' && block.rightColumn.image && (
-          <Image
-            src={urlFor(block.rightColumn.image).width(600).url()}
-            alt=""
-            width={600}
-            height={400}
-            className="w-full h-auto"
-          />
-        )}
-      </div>
+
+      {/* Caption */}
+      {(currentImage.caption || currentImage.title) && (
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-white text-center max-w-lg px-4">
+          {currentImage.title && <p className="font-medium">{currentImage.title}</p>}
+          {currentImage.caption && <p className="text-sm text-gray-300">{currentImage.caption}</p>}
+        </div>
+      )}
     </div>
   )
 }
