@@ -1,9 +1,10 @@
 // components/ContentBlocks.tsx
-// Updated content blocks renderer with responsive image delivery
+// Content blocks renderer - no external dependencies
 
 'use client'
 
-import SanityImage, { getSanityImageUrl } from './SanityImage'
+import Image from 'next/image'
+import { urlFor } from '@/lib/sanity.client'
 import { useState } from 'react'
 
 interface ContentBlocksProps {
@@ -73,25 +74,24 @@ function ImageBlock({ block }: { block: any }) {
     small: 'w-2/5 mx-auto'
   }
 
-  // Responsive sizes based on display size
-  const sizesMap = {
-    full: '100vw',
-    large: '80vw',
-    medium: '60vw',
-    small: '40vw'
-  }
-
   const displaySize = (block.size as keyof typeof sizeClasses) || 'full'
+  
+  // Get image URL
+  const imageUrl = block.image?.asset 
+    ? urlFor(block.image).width(1200).url()
+    : null
+
+  if (!imageUrl) return null
 
   return (
     <>
       <figure className={sizeClasses[displaySize]}>
-        <SanityImage
-          image={block.image}
+        <img
+          src={imageUrl}
           alt={block.alt || block.title || ''}
-          sizes={sizesMap[displaySize]}
           className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
           onClick={() => setLightboxOpen(true)}
+          loading="lazy"
         />
         {(block.title || block.caption) && (
           <figcaption className="mt-2 text-sm text-gray-600">
@@ -104,7 +104,7 @@ function ImageBlock({ block }: { block: any }) {
       {/* Lightbox */}
       {lightboxOpen && (
         <Lightbox
-          image={block.image}
+          imageUrl={urlFor(block.image).width(2400).url()}
           alt={block.alt || block.title || ''}
           onClose={() => setLightboxOpen(false)}
         />
@@ -126,41 +126,42 @@ function GalleryBlock({ block }: { block: any }) {
     'carousel': 'flex overflow-x-auto gap-4 snap-x snap-mandatory'
   }
 
-  // Sizes for grid layouts
-  const sizesMap = {
-    'grid-2': '(max-width: 640px) 100vw, 50vw',
-    'grid-3': '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw',
-    'grid-4': '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
-    'carousel': '80vw'
-  }
-
   const layout = (block.layout as keyof typeof layoutClasses) || 'grid-3'
   const isCarousel = layout === 'carousel'
 
   return (
     <>
       <div className={isCarousel ? layoutClasses.carousel : `grid ${layoutClasses[layout]} gap-4`}>
-        {block.images?.map((item: any, idx: number) => (
-          <div 
-            key={item._key || idx} 
-            className={isCarousel ? 'flex-shrink-0 w-4/5 snap-center' : 'relative aspect-[4/3]'}
-          >
-            <SanityImage
-              image={item.image || item}
-              alt={item.alt || item.caption || ''}
-              sizes={sizesMap[layout]}
-              fill={!isCarousel}
-              className={`
-                ${isCarousel ? 'w-full h-auto' : 'object-cover'}
-                cursor-pointer hover:opacity-95 transition-opacity
-              `}
-              onClick={() => setLightboxIndex(idx)}
-            />
-            {item.caption && !isCarousel && (
-              <p className="mt-1 text-xs text-gray-500 truncate">{item.caption}</p>
-            )}
-          </div>
-        ))}
+        {block.images?.map((item: any, idx: number) => {
+          const imageUrl = item.image?.asset 
+            ? urlFor(item.image).width(600).url()
+            : item.asset 
+              ? urlFor(item).width(600).url()
+              : null
+
+          if (!imageUrl) return null
+
+          return (
+            <div 
+              key={item._key || idx} 
+              className={isCarousel ? 'flex-shrink-0 w-4/5 snap-center' : 'relative aspect-[4/3]'}
+            >
+              <img
+                src={imageUrl}
+                alt={item.alt || item.caption || ''}
+                className={`
+                  ${isCarousel ? 'w-full h-auto' : 'w-full h-full object-cover'}
+                  cursor-pointer hover:opacity-95 transition-opacity
+                `}
+                onClick={() => setLightboxIndex(idx)}
+                loading="lazy"
+              />
+              {item.caption && !isCarousel && (
+                <p className="mt-1 text-xs text-gray-500 truncate">{item.caption}</p>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* Gallery Lightbox with navigation */}
@@ -247,13 +248,13 @@ function TwoColumnBlock({ block }: { block: any }) {
       return <p className="whitespace-pre-wrap">{column.text}</p>
     }
     
-    if (column.type === 'image' && column.image) {
+    if (column.type === 'image' && column.image?.asset) {
       return (
-        <SanityImage
-          image={column.image}
+        <img
+          src={urlFor(column.image).width(600).url()}
           alt={column.alt || ''}
-          sizes="(max-width: 768px) 100vw, 50vw"
           className="w-full h-auto"
+          loading="lazy"
         />
       )
     }
@@ -273,11 +274,11 @@ function TwoColumnBlock({ block }: { block: any }) {
 // Lightbox Component
 // ============================================
 function Lightbox({ 
-  image, 
+  imageUrl, 
   alt, 
   onClose 
 }: { 
-  image: any
+  imageUrl: string
   alt: string
   onClose: () => void 
 }) {
@@ -296,7 +297,7 @@ function Lightbox({
         </svg>
       </button>
       <img
-        src={getSanityImageUrl(image, { width: 2400, quality: 90 })}
+        src={imageUrl}
         alt={alt}
         className="max-h-[90vh] max-w-[90vw] object-contain"
         onClick={(e) => e.stopPropagation()}
@@ -322,6 +323,13 @@ function GalleryLightbox({
   const currentImage = images[currentIndex]
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < images.length - 1
+
+  // Get image URL
+  const imageUrl = currentImage.image?.asset 
+    ? urlFor(currentImage.image).width(2400).url()
+    : currentImage.asset 
+      ? urlFor(currentImage).width(2400).url()
+      : ''
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
@@ -362,7 +370,7 @@ function GalleryLightbox({
 
       {/* Image */}
       <img
-        src={getSanityImageUrl(currentImage.image || currentImage, { width: 2400, quality: 90 })}
+        src={imageUrl}
         alt={currentImage.alt || currentImage.caption || ''}
         className="max-h-[85vh] max-w-[85vw] object-contain"
         onClick={(e) => e.stopPropagation()}
