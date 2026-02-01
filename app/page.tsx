@@ -1,14 +1,14 @@
 // app/page.tsx
-// Homepage with responsive image delivery for featured works
+// Homepage with featured works
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { client } from '@/lib/sanity.client'
 import { groq } from 'next-sanity'
-import SanityImage from '@/components/SanityImage'
 
 export const revalidate = 60
 
-// Featured works query with full image references
+// Simple query - just fetch URLs directly
 const homeQuery = groq`
   *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) [0...6] {
     _id,
@@ -16,11 +16,11 @@ const homeQuery = groq`
     "slug": slug.current,
     year,
     
-    // Full image reference for responsive delivery
-    "thumbnailImage": coalesce(
-      thumbnail,
-      contentBlocks[_type == "imageBlock"][0].image,
-      images[0]
+    // Thumbnail URL with fallback chain
+    "thumbnail": coalesce(
+      thumbnail.asset->url,
+      contentBlocks[_type == "imageBlock"][0].image.asset->url,
+      images[0].asset->url
     ),
     
     // Alt text
@@ -29,13 +29,6 @@ const homeQuery = groq`
       contentBlocks[_type == "imageBlock"][0].alt,
       images[0].alt,
       title
-    ),
-    
-    // URL fallback
-    "thumbnail": coalesce(
-      thumbnail.asset->url,
-      contentBlocks[_type == "imageBlock"][0].image.asset->url,
-      images[0].asset->url
     )
   }
 `
@@ -78,20 +71,13 @@ export default async function HomePage() {
               className="group block"
             >
               <div className="aspect-square bg-gray-100 mb-3 overflow-hidden relative">
-                {work.thumbnailImage?.asset ? (
-                  <SanityImage
-                    image={work.thumbnailImage}
-                    alt={work.thumbnailAlt || work.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : work.thumbnail ? (
-                  <img
+                {work.thumbnail ? (
+                  <Image
                     src={`${work.thumbnail}?w=600&h=600&fit=crop&auto=format`}
                     alt={work.thumbnailAlt || work.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400">

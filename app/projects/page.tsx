@@ -1,10 +1,10 @@
 // app/projects/page.tsx
-// Projects grid with responsive image delivery
+// Projects grid page
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { client } from '@/lib/sanity.client'
 import { groq } from 'next-sanity'
-import SanityImage from '@/components/SanityImage'
 
 export const revalidate = 60
 
@@ -22,13 +22,7 @@ const projectsQuery = groq`
     projectType,
     excerpt,
     
-    // Full image reference for responsive delivery
-    "thumbnailImage": coalesce(
-      featuredImage,
-      projectImages[0]
-    ),
-    
-    // URL fallback for backward compatibility
+    // Thumbnail URL with fallback
     "thumbnail": coalesce(
       featuredImage.asset->url,
       projectImages[0].asset->url
@@ -67,20 +61,13 @@ export default async function ProjectsPage() {
             className="group block"
           >
             <div className="aspect-square bg-gray-100 mb-3 overflow-hidden relative">
-              {project.thumbnailImage?.asset ? (
-                <SanityImage
-                  image={project.thumbnailImage}
-                  alt={project.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : project.thumbnail ? (
-                <img
+              {project.thumbnail ? (
+                <Image
                   src={`${project.thumbnail}?w=600&h=600&fit=crop&auto=format`}
                   alt={project.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-400">
