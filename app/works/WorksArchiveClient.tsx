@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-// Strip invisible characters (same fix we used for Vimeo URLs)
+// Strip invisible characters
 function cleanString(str: any): string {
   if (!str) return ''
   return String(str).replace(/[^\x20-\x7E]/g, '').trim()
@@ -43,14 +43,20 @@ export default function WorksArchiveClient({ works: initialWorks }: { works: any
   const filteredWorks = useMemo(() => {
     return initialWorks.filter(work => {
       // Search filter
-      const matchesSearch = searchTerm === '' || 
-        work.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (work.materials && work.materials.some((m: string) => 
-          m.toLowerCase().includes(searchTerm.toLowerCase())
-        )) ||
-        (work.themes && work.themes.some((t: string) => 
-          t.toLowerCase().includes(searchTerm.toLowerCase())
-        ))
+      const searchLower = searchTerm.toLowerCase()
+      const titleMatch = work.title?.toLowerCase().includes(searchLower) || false
+      
+      // Materials are now an array of strings (dereferenced in query) or null
+      const materialsMatch = Array.isArray(work.materials) && work.materials.some((m: any) => 
+        m && typeof m === 'string' && m.toLowerCase().includes(searchLower)
+      )
+      
+      // Themes
+      const themesMatch = Array.isArray(work.themes) && work.themes.some((t: any) => 
+        t && typeof t === 'string' && t.toLowerCase().includes(searchLower)
+      )
+      
+      const matchesSearch = searchTerm === '' || titleMatch || materialsMatch || themesMatch
 
       // Type filter
       const matchesType = selectedType === 'all' || cleanString(work.workType) === selectedType
