@@ -78,14 +78,14 @@ function ImageBlock({ block }: { block: any }) {
   
   // Generate responsive srcset for different screen sizes
   const imageSrcSet = block.image?.asset ? `
-    ${urlFor(block.image).width(800).quality(80).url()} 800w,
-    ${urlFor(block.image).width(1200).quality(85).url()} 1200w,
-    ${urlFor(block.image).width(1800).quality(85).url()} 1800w,
-    ${urlFor(block.image).width(2400).quality(85).url()} 2400w
+    ${urlFor(block.image).width(800).quality(80).auto('format').url()} 800w,
+    ${urlFor(block.image).width(1200).quality(85).auto('format').url()} 1200w,
+    ${urlFor(block.image).width(1800).quality(85).auto('format').url()} 1800w,
+    ${urlFor(block.image).width(2400).quality(85).auto('format').url()} 2400w
   `.trim() : ''
   
   const imageSrc = block.image?.asset 
-    ? urlFor(block.image).width(1200).quality(85).url()
+    ? urlFor(block.image).width(1800).quality(85).auto('format').url()
     : null
 
   if (!imageSrc) return null
@@ -96,7 +96,7 @@ function ImageBlock({ block }: { block: any }) {
         <img
           src={imageSrc}
           srcSet={imageSrcSet}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, (max-width: 1920px) 1400px, 2000px"
           alt={block.alt || block.title || ''}
           className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
           onClick={() => setLightboxOpen(true)}
@@ -113,7 +113,7 @@ function ImageBlock({ block }: { block: any }) {
       {/* Lightbox */}
       {lightboxOpen && (
         <Lightbox
-          imageUrl={urlFor(block.image).width(3840).quality(90).url()}
+          imageUrl={urlFor(block.image).width(3840).quality(90).auto('format').url()}
           alt={block.alt || block.title || ''}
           onClose={() => setLightboxOpen(false)}
         />
@@ -145,12 +145,12 @@ function GalleryBlock({ block }: { block: any }) {
           const imageAsset = item.image?.asset ? item.image : item.asset ? item : null
           if (!imageAsset) return null
           
-          const imageSrc = urlFor(imageAsset).width(800).quality(85).url()
+          const imageSrc = urlFor(imageAsset).width(800).quality(85).auto('format').url()
           const imageSrcSet = `
-            ${urlFor(imageAsset).width(400).quality(80).url()} 400w,
-            ${urlFor(imageAsset).width(600).quality(85).url()} 600w,
-            ${urlFor(imageAsset).width(800).quality(85).url()} 800w,
-            ${urlFor(imageAsset).width(1200).quality(85).url()} 1200w
+            ${urlFor(imageAsset).width(400).quality(80).auto('format').url()} 400w,
+            ${urlFor(imageAsset).width(600).quality(85).auto('format').url()} 600w,
+            ${urlFor(imageAsset).width(800).quality(85).auto('format').url()} 800w,
+            ${urlFor(imageAsset).width(1200).quality(85).auto('format').url()} 1200w
           `.trim()
 
           return (
@@ -264,14 +264,14 @@ function TwoColumnBlock({ block }: { block: any }) {
     
     if (column.type === 'image' && column.image?.asset) {
       const srcSet = `
-        ${urlFor(column.image).width(400).quality(80).url()} 400w,
-        ${urlFor(column.image).width(600).quality(85).url()} 600w,
-        ${urlFor(column.image).width(900).quality(85).url()} 900w,
-        ${urlFor(column.image).width(1200).quality(85).url()} 1200w
+        ${urlFor(column.image).width(400).quality(80).auto('format').url()} 400w,
+        ${urlFor(column.image).width(600).quality(85).auto('format').url()} 600w,
+        ${urlFor(column.image).width(900).quality(85).auto('format').url()} 900w,
+        ${urlFor(column.image).width(1200).quality(85).auto('format').url()} 1200w
       `.trim()
       return (
         <img
-          src={urlFor(column.image).width(800).quality(85).url()}
+          src={urlFor(column.image).width(800).quality(85).auto('format').url()}
           srcSet={srcSet}
           sizes="(max-width: 768px) 100vw, 50vw"
           alt={column.alt || ''}
@@ -348,9 +348,9 @@ function GalleryLightbox({
 
   // Get image URL - full 4K for lightbox
   const imageUrl = currentImage.image?.asset 
-    ? urlFor(currentImage.image).width(3840).quality(90).url()
+    ? urlFor(currentImage.image).width(3840).quality(90).auto('format').url()
     : currentImage.asset 
-      ? urlFor(currentImage).width(3840).quality(90).url()
+      ? urlFor(currentImage).width(3840).quality(90).auto('format').url()
       : ''
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
