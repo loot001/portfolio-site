@@ -27,7 +27,7 @@ export default function WorkContent({ work }: WorkContentProps) {
       if (block._type === 'imageBlock' && block.image?.asset) {
         imageIndexMap[block._key] = allImages.length
         allImages.push({
-          src: urlFor(block.image).width(3840).quality(90).auto('format').url(),
+          src: urlFor(block.image).width(2400).quality(90).auto('format').url(),
           alt: block.alt || block.caption || '',
           caption: block.caption
         })
@@ -39,7 +39,7 @@ export default function WorkContent({ work }: WorkContentProps) {
       if (image.asset?.url) {
         imageIndexMap[`legacy-${index}`] = allImages.length
         allImages.push({
-          src: `${image.asset.url}?w=3840&q=90&auto=format`,
+          src: `${image.asset.url}?w=2400&q=90&auto=format`,
           alt: image.alt || image.title || work.title,
           caption: image.caption
         })
@@ -144,13 +144,13 @@ export default function WorkContent({ work }: WorkContentProps) {
               
               // Build responsive srcset
               const imageSrcSet = `
-                ${urlFor(block.image).width(800).quality(80).auto('format').url()} 800w,
-                ${urlFor(block.image).width(1200).quality(85).auto('format').url()} 1200w,
-                ${urlFor(block.image).width(1800).quality(85).auto('format').url()} 1800w,
+                ${urlFor(block.image).width(640).quality(80).auto('format').url()} 640w,
+                ${urlFor(block.image).width(1024).quality(85).auto('format').url()} 1024w,
+                ${urlFor(block.image).width(1600).quality(85).auto('format').url()} 1600w,
                 ${urlFor(block.image).width(2400).quality(85).auto('format').url()} 2400w
               `.trim()
               
-              const imageSrc = urlFor(block.image).width(1800).quality(85).auto('format').url()
+              const imageSrc = urlFor(block.image).width(1600).quality(85).auto('format').url()
               
               return (
                 <div key={block._key} className={sizeClasses[block.size as keyof typeof sizeClasses] || 'w-full'}>
@@ -161,7 +161,7 @@ export default function WorkContent({ work }: WorkContentProps) {
                     <img
                       src={imageSrc}
                       srcSet={imageSrcSet}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, (max-width: 1920px) 1400px, 2000px"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, (max-width: 1600px) 1200px, 1600px"
                       alt={block.alt || block.caption || ''}
                       className="w-full h-auto"
                       loading="lazy"
@@ -243,9 +243,9 @@ export default function WorkContent({ work }: WorkContentProps) {
                 // Build responsive srcset for legacy images
                 const baseUrl = image.asset.url
                 const imageSrcSet = `
-                  ${baseUrl}?w=800&q=80&auto=format 800w,
-                  ${baseUrl}?w=1200&q=85&auto=format 1200w,
-                  ${baseUrl}?w=1800&q=85&auto=format 1800w,
+                  ${baseUrl}?w=640&q=80&auto=format 640w,
+                  ${baseUrl}?w=1024&q=85&auto=format 1024w,
+                  ${baseUrl}?w=1600&q=85&auto=format 1600w,
                   ${baseUrl}?w=2400&q=85&auto=format 2400w
                 `.trim()
                 
@@ -256,9 +256,9 @@ export default function WorkContent({ work }: WorkContentProps) {
                       className="w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                       <img
-                        src={`${baseUrl}?w=1800&q=85&auto=format`}
+                        src={`${baseUrl}?w=1600&q=85&auto=format`}
                         srcSet={imageSrcSet}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, (max-width: 1920px) 1400px, 2000px"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, (max-width: 1600px) 1200px, 1600px"
                         alt={image.alt || image.title || work.title}
                         className="w-full h-auto"
                         loading="lazy"
