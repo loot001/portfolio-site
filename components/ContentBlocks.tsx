@@ -76,18 +76,27 @@ function ImageBlock({ block }: { block: any }) {
 
   const displaySize = (block.size as keyof typeof sizeClasses) || 'full'
   
-  // Get image URL
-  const imageUrl = block.image?.asset 
-    ? urlFor(block.image).width(1200).url()
+  // Generate responsive srcset for different screen sizes
+  const imageSrcSet = block.image?.asset ? `
+    ${urlFor(block.image).width(800).quality(80).url()} 800w,
+    ${urlFor(block.image).width(1200).quality(85).url()} 1200w,
+    ${urlFor(block.image).width(1800).quality(85).url()} 1800w,
+    ${urlFor(block.image).width(2400).quality(85).url()} 2400w
+  `.trim() : ''
+  
+  const imageSrc = block.image?.asset 
+    ? urlFor(block.image).width(1200).quality(85).url()
     : null
 
-  if (!imageUrl) return null
+  if (!imageSrc) return null
 
   return (
     <>
       <figure className={sizeClasses[displaySize]}>
         <img
-          src={imageUrl}
+          src={imageSrc}
+          srcSet={imageSrcSet}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
           alt={block.alt || block.title || ''}
           className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
           onClick={() => setLightboxOpen(true)}
@@ -104,7 +113,7 @@ function ImageBlock({ block }: { block: any }) {
       {/* Lightbox */}
       {lightboxOpen && (
         <Lightbox
-          imageUrl={urlFor(block.image).width(2400).url()}
+          imageUrl={urlFor(block.image).width(3840).quality(90).url()}
           alt={block.alt || block.title || ''}
           onClose={() => setLightboxOpen(false)}
         />
@@ -133,13 +142,16 @@ function GalleryBlock({ block }: { block: any }) {
     <>
       <div className={isCarousel ? layoutClasses.carousel : `grid ${layoutClasses[layout]} gap-4`}>
         {block.images?.map((item: any, idx: number) => {
-          const imageUrl = item.image?.asset 
-            ? urlFor(item.image).width(600).url()
-            : item.asset 
-              ? urlFor(item).width(600).url()
-              : null
-
-          if (!imageUrl) return null
+          const imageAsset = item.image?.asset ? item.image : item.asset ? item : null
+          if (!imageAsset) return null
+          
+          const imageSrc = urlFor(imageAsset).width(800).quality(85).url()
+          const imageSrcSet = `
+            ${urlFor(imageAsset).width(400).quality(80).url()} 400w,
+            ${urlFor(imageAsset).width(600).quality(85).url()} 600w,
+            ${urlFor(imageAsset).width(800).quality(85).url()} 800w,
+            ${urlFor(imageAsset).width(1200).quality(85).url()} 1200w
+          `.trim()
 
           return (
             <div 
@@ -147,7 +159,9 @@ function GalleryBlock({ block }: { block: any }) {
               className={isCarousel ? 'flex-shrink-0 w-4/5 snap-center' : 'relative aspect-[4/3]'}
             >
               <img
-                src={imageUrl}
+                src={imageSrc}
+                srcSet={imageSrcSet}
+                sizes={isCarousel ? '80vw' : '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 400px'}
                 alt={item.alt || item.caption || ''}
                 className={`
                   ${isCarousel ? 'w-full h-auto' : 'w-full h-full object-cover'}
@@ -249,9 +263,17 @@ function TwoColumnBlock({ block }: { block: any }) {
     }
     
     if (column.type === 'image' && column.image?.asset) {
+      const srcSet = `
+        ${urlFor(column.image).width(400).quality(80).url()} 400w,
+        ${urlFor(column.image).width(600).quality(85).url()} 600w,
+        ${urlFor(column.image).width(900).quality(85).url()} 900w,
+        ${urlFor(column.image).width(1200).quality(85).url()} 1200w
+      `.trim()
       return (
         <img
-          src={urlFor(column.image).width(600).url()}
+          src={urlFor(column.image).width(800).quality(85).url()}
+          srcSet={srcSet}
+          sizes="(max-width: 768px) 100vw, 50vw"
           alt={column.alt || ''}
           className="w-full h-auto"
           loading="lazy"
@@ -324,11 +346,11 @@ function GalleryLightbox({
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < images.length - 1
 
-  // Get image URL
+  // Get image URL - full 4K for lightbox
   const imageUrl = currentImage.image?.asset 
-    ? urlFor(currentImage.image).width(2400).url()
+    ? urlFor(currentImage.image).width(3840).quality(90).url()
     : currentImage.asset 
-      ? urlFor(currentImage).width(2400).url()
+      ? urlFor(currentImage).width(3840).quality(90).url()
       : ''
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
