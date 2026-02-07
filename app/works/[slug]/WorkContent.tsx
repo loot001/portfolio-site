@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { PortableText, PortableTextComponents } from '@portabletext/react'
+import { urlFor } from '@/lib/sanity.client'
 import Lightbox from './Lightbox'
 
 interface WorkContentProps {
@@ -24,10 +24,10 @@ export default function WorkContent({ work }: WorkContentProps) {
   if (useContentBlocks) {
     // Collect from content blocks only
     work.contentBlocks.forEach((block: any) => {
-      if (block._type === 'imageBlock' && block.imageLargeUrl) {
+      if (block._type === 'imageBlock' && block.image?.asset) {
         imageIndexMap[block._key] = allImages.length
         allImages.push({
-          src: block.imageLargeUrl,
+          src: urlFor(block.image).width(3840).quality(90).auto('format').url(),
           alt: block.alt || block.caption || '',
           caption: block.caption
         })
@@ -39,7 +39,7 @@ export default function WorkContent({ work }: WorkContentProps) {
       if (image.asset?.url) {
         imageIndexMap[`legacy-${index}`] = allImages.length
         allImages.push({
-          src: image.asset.url,
+          src: `${image.asset.url}?w=3840&q=90&auto=format`,
           alt: image.alt || image.title || work.title,
           caption: image.caption
         })
@@ -134,7 +134,7 @@ export default function WorkContent({ work }: WorkContentProps) {
               return null
             }
             
-            if (block._type === 'imageBlock' && block.imageUrl) {
+            if (block._type === 'imageBlock' && block.image?.asset) {
               const sizeClasses = {
                 full: 'w-full',
                 large: 'w-4/5 mx-auto',
@@ -142,18 +142,29 @@ export default function WorkContent({ work }: WorkContentProps) {
               }
               const lightboxIdx = imageIndexMap[block._key]
               
+              // Build responsive srcset
+              const imageSrcSet = `
+                ${urlFor(block.image).width(800).quality(80).auto('format').url()} 800w,
+                ${urlFor(block.image).width(1200).quality(85).auto('format').url()} 1200w,
+                ${urlFor(block.image).width(1800).quality(85).auto('format').url()} 1800w,
+                ${urlFor(block.image).width(2400).quality(85).auto('format').url()} 2400w
+              `.trim()
+              
+              const imageSrc = urlFor(block.image).width(1800).quality(85).auto('format').url()
+              
               return (
                 <div key={block._key} className={sizeClasses[block.size as keyof typeof sizeClasses] || 'w-full'}>
                   <button
                     onClick={() => openLightbox(lightboxIdx)}
                     className="w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
-                    <Image
-                      src={block.imageUrl}
+                    <img
+                      src={imageSrc}
+                      srcSet={imageSrcSet}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, (max-width: 1920px) 1400px, 2000px"
                       alt={block.alt || block.caption || ''}
-                      width={1200}
-                      height={800}
                       className="w-full h-auto"
+                      loading="lazy"
                     />
                   </button>
                   {block.caption && (
@@ -229,18 +240,28 @@ export default function WorkContent({ work }: WorkContentProps) {
               {work.images.map((image: any, index: number) => {
                 const lightboxIdx = imageIndexMap[`legacy-${index}`]
                 
+                // Build responsive srcset for legacy images
+                const baseUrl = image.asset.url
+                const imageSrcSet = `
+                  ${baseUrl}?w=800&q=80&auto=format 800w,
+                  ${baseUrl}?w=1200&q=85&auto=format 1200w,
+                  ${baseUrl}?w=1800&q=85&auto=format 1800w,
+                  ${baseUrl}?w=2400&q=85&auto=format 2400w
+                `.trim()
+                
                 return (
                   <div key={index}>
                     <button
                       onClick={() => openLightbox(lightboxIdx)}
                       className="w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
-                      <Image
-                        src={image.asset.url}
+                      <img
+                        src={`${baseUrl}?w=1800&q=85&auto=format`}
+                        srcSet={imageSrcSet}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, (max-width: 1920px) 1400px, 2000px"
                         alt={image.alt || image.title || work.title}
-                        width={1200}
-                        height={800}
                         className="w-full h-auto"
+                        loading="lazy"
                       />
                     </button>
                     {image.caption && (

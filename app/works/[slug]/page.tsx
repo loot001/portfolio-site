@@ -175,21 +175,7 @@ export default async function WorkPage({
     notFound()
   }
 
-  // Pre-process images for the client component (convert urlFor to actual URLs)
-  const processedWork = {
-    ...work,
-    contentBlocks: work.contentBlocks?.map((block: any) => {
-      if (block._type === 'imageBlock' && block.image?.asset) {
-        return {
-          ...block,
-          imageUrl: urlFor(block.image).width(1200).url(),
-          imageLargeUrl: urlFor(block.image).width(2000).url()
-        }
-      }
-      return block
-    })
-  }
-
+  // Pass work directly - let ContentBlocks handle responsive images
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Top Navigation */}
@@ -244,8 +230,8 @@ export default async function WorkPage({
         </div>
       </div>
 
-      {/* Work Content with Lightbox */}
-      <WorkContent work={processedWork} />
+      {/* Work Content with Lightbox - pass raw work data */}
+      <WorkContent work={work} />
 
       {/* Themes and AI info */}
       {(work.themes || work.aiInvolved) && (
