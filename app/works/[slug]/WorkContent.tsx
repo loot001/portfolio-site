@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { PortableText, PortableTextComponents } from '@portabletext/react'
 import { urlFor } from '@/lib/sanity.client'
@@ -10,40 +10,68 @@ interface WorkContentProps {
   work: any
 }
 
+// Helper to get appropriate image width based on screen size
+function getLightboxWidth(): number {
+  if (typeof window === 'undefined') return 2400
+  const width = window.innerWidth
+  if (width <= 768) return 1024      // Mobile - matches srcset pick
+  return 2400                         // Tablet/Desktop - matches srcset pick
+}
+
 export default function WorkContent({ work }: WorkContentProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [lightboxWidth, setLightboxWidth] = useState(1600)
+  
+  // Set lightbox width based on screen size
+  useEffect(() => {
+    setLightboxWidth(getLightboxWidth())
+  }, [])
 
   // Determine if using content blocks or legacy
   const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
 
-  // Collect images from ONE source only (content blocks OR legacy, not both)
-  const allImages: { src: string; alt: string; caption?: string }[] = []
-  const imageIndexMap: { [key: string]: number } = {}
+  // Build lightbox images with responsive sizing
+  const getLightboxImages = () => {
+    const images: { src: string; alt: string; caption?: string }[] = []
+    
+    if (useContentBlocks) {
+      work.contentBlocks.forEach((block: any) => {
+        if (block._type === 'imageBlock' && block.image?.asset) {
+          images.push({
+            src: urlFor(block.image).width(lightboxWidth).quality(85).auto('format').url(),
+            alt: block.alt || block.caption || '',
+            caption: block.caption
+          })
+        }
+      })
+    } else if (work.images) {
+      work.images.forEach((image: any) => {
+        if (image.asset?.url) {
+          images.push({
+            src: `${image.asset.url}?w=${lightboxWidth}&q=85&auto=format`,
+            alt: image.alt || image.title || work.title,
+            caption: image.caption
+          })
+        }
+      })
+    }
+    return images
+  }
 
+  // Track image indices for lightbox
+  const imageIndexMap: { [key: string]: number } = {}
+  let imageCounter = 0
+  
   if (useContentBlocks) {
-    // Collect from content blocks only
     work.contentBlocks.forEach((block: any) => {
       if (block._type === 'imageBlock' && block.image?.asset) {
-        imageIndexMap[block._key] = allImages.length
-        allImages.push({
-          src: urlFor(block.image).width(2400).quality(90).auto('format').url(),
-          alt: block.alt || block.caption || '',
-          caption: block.caption
-        })
+        imageIndexMap[block._key] = imageCounter++
       }
     })
   } else if (work.images) {
-    // Collect from legacy images only
-    work.images.forEach((image: any, index: number) => {
-      if (image.asset?.url) {
-        imageIndexMap[`legacy-${index}`] = allImages.length
-        allImages.push({
-          src: `${image.asset.url}?w=2400&q=90&auto=format`,
-          alt: image.alt || image.title || work.title,
-          caption: image.caption
-        })
-      }
+    work.images.forEach((_: any, index: number) => {
+      imageIndexMap[`legacy-${index}`] = imageCounter++
     })
   }
 
@@ -142,7 +170,7 @@ export default function WorkContent({ work }: WorkContentProps) {
               }
               const lightboxIdx = imageIndexMap[block._key]
               
-              // Build responsive srcset
+              // Build responsive srcset - matches lightbox breakpoints
               const imageSrcSet = `
                 ${urlFor(block.image).width(640).quality(80).auto('format').url()} 640w,
                 ${urlFor(block.image).width(1024).quality(85).auto('format').url()} 1024w,
@@ -161,7 +189,7 @@ export default function WorkContent({ work }: WorkContentProps) {
                     <img
                       src={imageSrc}
                       srcSet={imageSrcSet}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, (max-width: 1600px) 1200px, 1600px"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1400px"
                       alt={block.alt || block.caption || ''}
                       className="w-full h-auto"
                       loading="lazy"
@@ -240,7 +268,7 @@ export default function WorkContent({ work }: WorkContentProps) {
               {work.images.map((image: any, index: number) => {
                 const lightboxIdx = imageIndexMap[`legacy-${index}`]
                 
-                // Build responsive srcset for legacy images
+                // Build responsive srcset - matches lightbox breakpoints
                 const baseUrl = image.asset.url
                 const imageSrcSet = `
                   ${baseUrl}?w=640&q=80&auto=format 640w,
@@ -258,7 +286,7 @@ export default function WorkContent({ work }: WorkContentProps) {
                       <img
                         src={`${baseUrl}?w=1600&q=85&auto=format`}
                         srcSet={imageSrcSet}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, (max-width: 1600px) 1200px, 1600px"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1400px"
                         alt={image.alt || image.title || work.title}
                         className="w-full h-auto"
                         loading="lazy"
@@ -316,7 +344,7 @@ export default function WorkContent({ work }: WorkContentProps) {
 
       {/* Lightbox */}
       <Lightbox
-        images={allImages}
+        images={getLightboxImages()}
         initialIndex={lightboxIndex}
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
