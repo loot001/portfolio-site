@@ -71,6 +71,22 @@ export default function WorkContent({ work }: WorkContentProps) {
     return images
   }
 
+  // Preload lightbox-sized images in the background after page settles
+  useEffect(() => {
+    if (lightboxWidth === 1600) return // still default, wait for real value
+    
+    const timer = setTimeout(() => {
+      const images = getLightboxImages()
+      images.forEach(({ src }) => {
+        const img = new Image()
+        img.src = src
+      })
+    }, 1500) // delay so visible page images load first
+    
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxWidth])
+
   // Track image indices for lightbox — unified across imageBlock + mosaicBlock
   const imageIndexMap: { [key: string]: number } = {}
   let imageCounter = 0

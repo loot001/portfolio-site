@@ -142,12 +142,14 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </p>
       )}
 
-      {/* Image - pointer-events-none so swipes pass through */}
+      {/* Image */}
       <img
         src={currentImage.src}
         alt={currentImage.alt}
-        className="max-w-[90vw] max-h-[85vh] object-contain select-none pointer-events-none"
+        className="max-w-[90vw] max-h-[85vh] object-contain select-none"
         draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        onClick={(e) => e.stopPropagation()}
       />
 
       {/* Caption and counter */}
