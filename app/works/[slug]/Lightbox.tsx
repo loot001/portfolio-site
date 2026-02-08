@@ -135,9 +135,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </button>
       )}
 
-      {/* Swipe instruction - mobile only */}
+      {/* Swipe instruction - mobile only, positioned just above image */}
       {images.length > 1 && (
-        <p className="absolute top-4 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
+        <p className="absolute top-16 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
           Swipe to navigate
         </p>
       )}
