@@ -259,10 +259,10 @@ export default function WorkContent({ work }: WorkContentProps) {
                       const thumbSrc = urlFor(item.image).width(800).quality(85).auto('format').url()
                       
                       return (
-                        <button
+                        <div
                           key={item._key || idx}
                           onClick={() => openLightbox(lightboxIdx)}
-                          className="block w-full mb-3 sm:mb-4 cursor-zoom-in break-inside-avoid focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          className="block w-full mb-3 sm:mb-4 cursor-zoom-in break-inside-avoid"
                         >
                           <img
                             src={thumbSrc}
@@ -277,7 +277,7 @@ export default function WorkContent({ work }: WorkContentProps) {
                               {item.caption}
                             </span>
                           )}
-                        </button>
+                        </div>
                       )
                     })}
                   </div>
