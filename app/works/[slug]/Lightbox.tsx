@@ -21,6 +21,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   // Touch/swipe handling
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+  const isSwiping = useRef(false)
 
   // Reset to initial index when opened
   useEffect(() => {
@@ -41,28 +42,40 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
+    isSwiping.current = false
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Prevent ALL touch-scroll while lightbox is open
+    e.preventDefault()
+    
+    const deltaX = Math.abs(touchStartX.current - e.touches[0].clientX)
+    const deltaY = Math.abs(touchStartY.current - e.touches[0].clientY)
+    
+    // Mark as swiping once we detect horizontal movement
+    if (deltaX > 10 && deltaX > deltaY) {
+      isSwiping.current = true
+    }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const touchEndX = e.changedTouches[0].clientX
-    const touchEndY = e.changedTouches[0].clientY
-    
     const deltaX = touchStartX.current - touchEndX
-    const deltaY = touchStartY.current - touchEndY
     
-    const minSwipeDistance = 30 // Low threshold for instant response
+    const minSwipeDistance = 30
     
-    // Only trigger if horizontal movement is greater than vertical
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+    if (isSwiping.current && Math.abs(deltaX) > minSwipeDistance) {
       if (deltaX > 0) {
         goToNext()
       } else {
         goToPrevious()
       }
     }
+    
+    isSwiping.current = false
   }
 
-  // Keyboard navigation
+  // Lock body scroll and keyboard navigation
   useEffect(() => {
     if (!isOpen) return
 
@@ -72,12 +85,26 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       if (e.key === 'ArrowRight') goToNext()
     }
 
-    document.addEventListener('keydown', handleKeyDown)
+    // Lock scroll — fixes iOS Safari and Chrome mobile scroll-through
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
     document.body.style.overflow = 'hidden'
+
+    document.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
+      
+      // Restore scroll position
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
     }
   }, [isOpen, onClose, goToPrevious, goToNext])
 
@@ -87,8 +114,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center overscroll-none touch-none"
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onClick={onClose}
     >
@@ -135,7 +163,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </button>
       )}
 
-      {/* Swipe instruction - mobile only, positioned just above image */}
+      {/* Swipe instruction - mobile only */}
       {images.length > 1 && (
         <p className="absolute top-16 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
           Swipe to navigate
