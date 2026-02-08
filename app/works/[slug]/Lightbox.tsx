@@ -19,9 +19,8 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   
   // Touch/swipe handling
-  const touchStartX = useRef<number | null>(null)
-  const touchStartY = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
 
   // Reset to initial index when opened
   useEffect(() => {
@@ -39,39 +38,29 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   }, [images.length])
 
   // Handle swipe gestures
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
-    touchEndX.current = null
-  }, [])
+  }
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (!touchStartX.current || !touchEndX.current || !touchStartY.current) return
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX
+    const touchEndY = e.changedTouches[0].clientY
     
-    const deltaX = touchStartX.current - touchEndX.current
-    const deltaY = Math.abs(touchStartY.current - (touchEndX.current || 0))
-    const minSwipeDistance = 50
+    const deltaX = touchStartX.current - touchEndX
+    const deltaY = touchStartY.current - touchEndY
     
-    // Only trigger if horizontal swipe is greater than vertical (prevents scroll conflicts)
-    if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaX) > deltaY) {
+    const minSwipeDistance = 30 // Low threshold for instant response
+    
+    // Only trigger if horizontal movement is greater than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
       if (deltaX > 0) {
-        // Swiped left - go to next
         goToNext()
       } else {
-        // Swiped right - go to previous
         goToPrevious()
       }
     }
-    
-    // Reset
-    touchStartX.current = null
-    touchStartY.current = null
-    touchEndX.current = null
-  }, [goToNext, goToPrevious])
+  }
 
   // Keyboard navigation
   useEffect(() => {
@@ -84,7 +73,6 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    // Prevent body scroll when lightbox is open
     document.body.style.overflow = 'hidden'
 
     return () => {
@@ -100,10 +88,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   return (
     <div 
       className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-      onClick={onClose}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onClick={onClose}
     >
       {/* Close button */}
       <button
@@ -116,7 +103,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </svg>
       </button>
 
-      {/* Previous button - hidden on mobile */}
+      {/* Previous button - hidden on touch devices */}
       {images.length > 1 && (
         <button
           onClick={(e) => {
@@ -132,7 +119,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </button>
       )}
 
-      {/* Next button - hidden on mobile */}
+      {/* Next button - hidden on touch devices */}
       {images.length > 1 && (
         <button
           onClick={(e) => {
@@ -148,28 +135,22 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         </button>
       )}
 
-      {/* Image container */}
-      <div 
-        className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img
-          src={currentImage.src}
-          alt={currentImage.alt}
-          className="max-w-full max-h-[85vh] object-contain select-none"
-          draggable={false}
-        />
-      </div>
+      {/* Image - pointer-events-none so swipes pass through */}
+      <img
+        src={currentImage.src}
+        alt={currentImage.alt}
+        className="max-w-[90vw] max-h-[85vh] object-contain select-none pointer-events-none"
+        draggable={false}
+      />
 
       {/* Caption and counter */}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white">
+      <div className="absolute bottom-4 left-0 right-0 text-center text-white pointer-events-none">
         {currentImage.caption && (
           <p className="mb-2 text-sm px-4">{currentImage.caption}</p>
         )}
         {images.length > 1 && (
           <p className="text-sm text-white/60">
             {currentIndex + 1} / {images.length}
-            <span className="sm:hidden text-xs block mt-1">Swipe to navigate</span>
           </p>
         )}
       </div>
