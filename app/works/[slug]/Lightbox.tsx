@@ -95,7 +95,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors"
+        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors sm:top-4"
         aria-label="Close lightbox"
       >
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,6 +133,13 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
+      )}
+
+      {/* Swipe instruction - mobile only */}
+      {images.length > 1 && (
+        <p className="absolute top-4 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
+          Swipe to navigate
+        </p>
       )}
 
       {/* Image - pointer-events-none so swipes pass through */}
