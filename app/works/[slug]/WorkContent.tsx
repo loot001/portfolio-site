@@ -32,6 +32,7 @@ export default function WorkContent({ work }: WorkContentProps) {
   const useContentBlocks = work.contentBlocks && work.contentBlocks.length > 0
 
   // Build lightbox images with responsive sizing
+  // Collects from BOTH imageBlock AND mosaicBlock in content order
   const getLightboxImages = () => {
     const images: { src: string; alt: string; caption?: string }[] = []
     
@@ -42,6 +43,17 @@ export default function WorkContent({ work }: WorkContentProps) {
             src: urlFor(block.image).width(lightboxWidth).quality(85).auto('format').url(),
             alt: block.alt || block.caption || '',
             caption: block.caption
+          })
+        }
+        if (block._type === 'mosaicBlock' && block.images) {
+          block.images.forEach((item: any) => {
+            if (item.image?.asset) {
+              images.push({
+                src: urlFor(item.image).width(lightboxWidth).quality(85).auto('format').url(),
+                alt: item.alt || item.caption || '',
+                caption: item.caption
+              })
+            }
           })
         }
       })
@@ -59,7 +71,7 @@ export default function WorkContent({ work }: WorkContentProps) {
     return images
   }
 
-  // Track image indices for lightbox
+  // Track image indices for lightbox — unified across imageBlock + mosaicBlock
   const imageIndexMap: { [key: string]: number } = {}
   let imageCounter = 0
   
@@ -67,6 +79,13 @@ export default function WorkContent({ work }: WorkContentProps) {
     work.contentBlocks.forEach((block: any) => {
       if (block._type === 'imageBlock' && block.image?.asset) {
         imageIndexMap[block._key] = imageCounter++
+      }
+      if (block._type === 'mosaicBlock' && block.images) {
+        block.images.forEach((item: any, idx: number) => {
+          if (item.image?.asset) {
+            imageIndexMap[`${block._key}-mosaic-${idx}`] = imageCounter++
+          }
+        })
       }
     })
   } else if (work.images) {
@@ -199,6 +218,55 @@ export default function WorkContent({ work }: WorkContentProps) {
                     <div className="mt-2 text-sm text-gray-600">
                       <p>{block.caption}</p>
                     </div>
+                  )}
+                </div>
+              )
+            }
+            
+            {/* ===== MOSAIC GRID BLOCK ===== */}
+            if (block._type === 'mosaicBlock' && block.images?.length > 0) {
+              return (
+                <div key={block._key}>
+                  <div className="columns-2 gap-3 sm:gap-4">
+                    {block.images.map((item: any, idx: number) => {
+                      if (!item.image?.asset) return null
+                      
+                      const lightboxIdx = imageIndexMap[`${block._key}-mosaic-${idx}`]
+                      
+                      const thumbSrcSet = `
+                        ${urlFor(item.image).width(400).quality(80).auto('format').url()} 400w,
+                        ${urlFor(item.image).width(600).quality(80).auto('format').url()} 600w,
+                        ${urlFor(item.image).width(800).quality(85).auto('format').url()} 800w,
+                        ${urlFor(item.image).width(1200).quality(85).auto('format').url()} 1200w
+                      `.trim()
+                      
+                      const thumbSrc = urlFor(item.image).width(800).quality(85).auto('format').url()
+                      
+                      return (
+                        <button
+                          key={item._key || idx}
+                          onClick={() => openLightbox(lightboxIdx)}
+                          className="block w-full mb-3 sm:mb-4 cursor-zoom-in break-inside-avoid focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        >
+                          <img
+                            src={thumbSrc}
+                            srcSet={thumbSrcSet}
+                            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 45vw, 700px"
+                            alt={item.alt || item.caption || ''}
+                            className="w-full h-auto rounded-sm"
+                            loading="lazy"
+                          />
+                          {item.caption && (
+                            <span className="block mt-1 text-xs text-gray-500 text-left">
+                              {item.caption}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {block.caption && (
+                    <p className="mt-2 text-sm text-gray-600">{block.caption}</p>
                   )}
                 </div>
               )
