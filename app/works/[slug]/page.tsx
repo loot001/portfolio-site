@@ -55,7 +55,14 @@ const workBySlugQuery = groq`
       size,
       platform,
       url,
-      caption
+      caption,
+      // mosaicBlock fields
+      images[] {
+        _key,
+        image { asset-> },
+        caption,
+        alt
+      }
     },
     images[] {
       asset->,
