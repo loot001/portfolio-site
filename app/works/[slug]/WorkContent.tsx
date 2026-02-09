@@ -241,45 +241,59 @@ export default function WorkContent({ work }: WorkContentProps) {
             
             {/* ===== MOSAIC GRID BLOCK ===== */}
             if (block._type === 'mosaicBlock' && block.images?.length > 0) {
+              // Split images into two columns for top-aligned masonry
+              const validImages = block.images.filter((item: any) => item.image?.asset)
+              const leftCol: any[] = []
+              const rightCol: any[] = []
+              validImages.forEach((item: any, idx: number) => {
+                if (idx % 2 === 0) leftCol.push({ ...item, originalIdx: idx })
+                else rightCol.push({ ...item, originalIdx: idx })
+              })
+              
+              const renderMosaicItem = (item: any) => {
+                const lightboxIdx = imageIndexMap[`${block._key}-mosaic-${item.originalIdx}`]
+                
+                const thumbSrcSet = `
+                  ${urlFor(item.image).width(400).quality(80).auto('format').url()} 400w,
+                  ${urlFor(item.image).width(600).quality(80).auto('format').url()} 600w,
+                  ${urlFor(item.image).width(800).quality(85).auto('format').url()} 800w,
+                  ${urlFor(item.image).width(1200).quality(85).auto('format').url()} 1200w
+                `.trim()
+                
+                const thumbSrc = urlFor(item.image).width(800).quality(85).auto('format').url()
+                
+                return (
+                  <div
+                    key={item._key || item.originalIdx}
+                    onClick={() => openLightbox(lightboxIdx)}
+                    className="mb-3 sm:mb-4 cursor-zoom-in"
+                  >
+                    <img
+                      src={thumbSrc}
+                      srcSet={thumbSrcSet}
+                      sizes="(max-width: 768px) 50vw, (max-width: 1280px) 45vw, 700px"
+                      alt={item.alt || item.caption || ''}
+                      className="w-full h-auto rounded-sm"
+                      loading="lazy"
+                    />
+                    {item.caption && (
+                      <span className="block mt-1 text-xs text-gray-500 text-left">
+                        {item.caption}
+                      </span>
+                    )}
+                  </div>
+                )
+              }
+              
               return (
                 <div key={block._key}>
-                  <div className="columns-2 gap-3 sm:gap-4">
-                    {block.images.map((item: any, idx: number) => {
-                      if (!item.image?.asset) return null
-                      
-                      const lightboxIdx = imageIndexMap[`${block._key}-mosaic-${idx}`]
-                      
-                      const thumbSrcSet = `
-                        ${urlFor(item.image).width(400).quality(80).auto('format').url()} 400w,
-                        ${urlFor(item.image).width(600).quality(80).auto('format').url()} 600w,
-                        ${urlFor(item.image).width(800).quality(85).auto('format').url()} 800w,
-                        ${urlFor(item.image).width(1200).quality(85).auto('format').url()} 1200w
-                      `.trim()
-                      
-                      const thumbSrc = urlFor(item.image).width(800).quality(85).auto('format').url()
-                      
-                      return (
-                        <div
-                          key={item._key || idx}
-                          onClick={() => openLightbox(lightboxIdx)}
-                          className="block w-full mb-3 sm:mb-4 cursor-zoom-in break-inside-avoid"
-                        >
-                          <img
-                            src={thumbSrc}
-                            srcSet={thumbSrcSet}
-                            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 45vw, 700px"
-                            alt={item.alt || item.caption || ''}
-                            className="w-full h-auto rounded-sm"
-                            loading="lazy"
-                          />
-                          {item.caption && (
-                            <span className="block mt-1 text-xs text-gray-500 text-left">
-                              {item.caption}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
+                  <div className="flex gap-3 sm:gap-4 items-start">
+                    <div className="flex-1 min-w-0">
+                      {leftCol.map(renderMosaicItem)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {rightCol.map(renderMosaicItem)}
+                    </div>
                   </div>
                   {block.caption && (
                     <p className="mt-2 text-sm text-gray-600">{block.caption}</p>
