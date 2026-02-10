@@ -7,14 +7,16 @@ import WorksArchiveClient from './WorksArchiveClient'
 
 export const revalidate = 60
 
-// Simplified query - just fetch URLs directly (this was working before)
+// Query with granular date sorting (year -> month -> day -> title)
 const worksArchiveQuery = groq`
-  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, title asc) {
+  *[_type == "work" && defined(slug.current)] | order(yearNumeric desc, monthNumeric desc, dayNumeric desc, title asc) {
     _id,
     title,
     slug,
     year,
     yearNumeric,
+    monthNumeric,
+    dayNumeric,
     workType,
     "materials": materials[]->name,
     dimensions,
