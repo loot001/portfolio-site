@@ -7,7 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { urlFor } from '@/lib/sanity.client'
 import { useState } from 'react'
-import { PortableText } from '@portabletext/react'
+import { PortableText, PortableTextComponents } from '@portabletext/react'
 
 interface ContentBlocksProps {
   blocks: any[]
@@ -59,10 +59,9 @@ function renderBlock(block: any) {
 // Text Block with Portable Text
 // ============================================
 function TextBlock({ content }: { content: any[] }) {
-  const portableTextComponents = {
+  const components: PortableTextComponents = {
     marks: {
-      // External link
-      link: ({ value, children }: any) => {
+      link: ({ value, children }) => {
         const target = value?.openInNewTab ? '_blank' : '_self'
         const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
         return (
@@ -76,9 +75,8 @@ function TextBlock({ content }: { content: any[] }) {
           </a>
         )
       },
-      // Link to Work
-      workLink: ({ value, children }: any) => {
-        const slug = value?.work?.slug?.current
+      workLink: ({ value, children }) => {
+        const slug = value?.work?.slug
         if (!slug) return <span>{children}</span>
         return (
           <Link 
@@ -89,18 +87,17 @@ function TextBlock({ content }: { content: any[] }) {
           </Link>
         )
       },
-      // Link to PDF
-      pdfLink: ({ value, children }: any) => {
-        // Try multiple potential paths for the PDF URL
-        const pdfUrl = value?.pdf?.asset?.url || value?.pdf?.url
+      pdfLink: ({ value, children }) => {
+        console.log('PDF Link - Full value:', JSON.stringify(value, null, 2))
         
-        // Debug logging
-        console.log('pdfLink value:', value)
-        console.log('pdfUrl:', pdfUrl)
+        // Try all possible paths
+        const pdfUrl = value?.pdf?.asset?.url || value?.asset?.url || value?.url
+        
+        console.log('PDF URL found:', pdfUrl)
         
         if (!pdfUrl) {
-          console.warn('No PDF URL found in pdfLink')
-          return <span className="text-gray-400">{children}</span>
+          console.warn('No PDF URL - returning plain text')
+          return <span className="text-red-500 font-bold">{children} [PDF ERROR - CHECK CONSOLE]</span>
         }
         
         const target = value?.openInNewTab !== false ? '_blank' : '_self'
@@ -111,7 +108,7 @@ function TextBlock({ content }: { content: any[] }) {
             href={pdfUrl} 
             target={target}
             rel={rel}
-            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1 font-bold"
           >
             {children}
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -120,28 +117,28 @@ function TextBlock({ content }: { content: any[] }) {
           </a>
         )
       },
-      strong: ({ children }: any) => <strong>{children}</strong>,
-      em: ({ children }: any) => <em>{children}</em>,
+      strong: ({ children }) => <strong>{children}</strong>,
+      em: ({ children }) => <em>{children}</em>,
     },
     block: {
-      normal: ({ children }: any) => <p className="mb-4">{children}</p>,
-      h3: ({ children }: any) => <h3 className="text-xl font-semibold mt-8 mb-4">{children}</h3>,
-      h4: ({ children }: any) => <h4 className="text-lg font-semibold mt-6 mb-3">{children}</h4>,
-      blockquote: ({ children }: any) => (
+      normal: ({ children }) => <p className="mb-4">{children}</p>,
+      h3: ({ children }) => <h3 className="text-xl font-semibold mt-8 mb-4">{children}</h3>,
+      h4: ({ children }) => <h4 className="text-lg font-semibold mt-6 mb-3">{children}</h4>,
+      blockquote: ({ children }) => (
         <blockquote className="border-l-4 border-gray-300 pl-6 py-2 my-6 italic text-gray-700">
           {children}
         </blockquote>
       ),
     },
     list: {
-      bullet: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-      number: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
+      bullet: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+      number: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
     },
   }
 
   return (
     <div className="prose max-w-none">
-      <PortableText value={content} components={portableTextComponents} />
+      <PortableText value={content} components={components} />
     </div>
   )
 }
