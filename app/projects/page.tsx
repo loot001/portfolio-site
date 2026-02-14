@@ -14,7 +14,7 @@ const projectsQuery = groq`
     projectsPageTitle,
     projectsPageDescription
   },
-  "projects": *[_type == "project" && defined(slug.current)] | order(year desc, title asc) {
+  "projects": *[_type == "project" && defined(slug.current)] {
     _id,
     title,
     "slug": slug.current,
