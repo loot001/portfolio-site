@@ -1,11 +1,13 @@
 // components/ContentBlocks.tsx
-// Content blocks renderer - no external dependencies
+// Content blocks renderer with portable text support
 
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { urlFor } from '@/lib/sanity.client'
 import { useState } from 'react'
+import { PortableText } from '@portabletext/react'
 
 interface ContentBlocksProps {
   blocks: any[]
@@ -33,6 +35,9 @@ function renderBlock(block: any) {
     case 'imageBlock':
       return <ImageBlock block={block} />
     
+    case 'mosaicBlock':
+      return <MosaicBlock block={block} />
+    
     case 'galleryBlock':
       return <GalleryBlock block={block} />
     
@@ -51,12 +56,81 @@ function renderBlock(block: any) {
 }
 
 // ============================================
-// Text Block
+// Text Block with Portable Text
 // ============================================
-function TextBlock({ content }: { content: string }) {
+function TextBlock({ content }: { content: any[] }) {
+  const portableTextComponents = {
+    marks: {
+      // External link
+      link: ({ value, children }: any) => {
+        const target = value?.openInNewTab ? '_blank' : '_self'
+        const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
+        return (
+          <a 
+            href={value?.href} 
+            target={target}
+            rel={rel}
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {children}
+          </a>
+        )
+      },
+      // Link to Work
+      workLink: ({ value, children }: any) => {
+        const slug = value?.work?.slug?.current
+        if (!slug) return <span>{children}</span>
+        return (
+          <Link 
+            href={`/works/${slug}`}
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {children}
+          </Link>
+        )
+      },
+      // Link to PDF
+      pdfLink: ({ value, children }: any) => {
+        const pdfUrl = value?.pdf?.asset?.url
+        if (!pdfUrl) return <span>{children}</span>
+        const target = value?.openInNewTab ? '_blank' : '_self'
+        const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
+        return (
+          <a 
+            href={pdfUrl} 
+            target={target}
+            rel={rel}
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+          >
+            {children}
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+            </svg>
+          </a>
+        )
+      },
+      strong: ({ children }: any) => <strong>{children}</strong>,
+      em: ({ children }: any) => <em>{children}</em>,
+    },
+    block: {
+      normal: ({ children }: any) => <p className="mb-4">{children}</p>,
+      h3: ({ children }: any) => <h3 className="text-xl font-semibold mt-8 mb-4">{children}</h3>,
+      h4: ({ children }: any) => <h4 className="text-lg font-semibold mt-6 mb-3">{children}</h4>,
+      blockquote: ({ children }: any) => (
+        <blockquote className="border-l-4 border-gray-300 pl-6 py-2 my-6 italic text-gray-700">
+          {children}
+        </blockquote>
+      ),
+    },
+    list: {
+      bullet: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+      number: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
+    },
+  }
+
   return (
     <div className="prose max-w-none">
-      <p className="whitespace-pre-wrap">{content}</p>
+      <PortableText value={content} components={portableTextComponents} />
     </div>
   )
 }
@@ -116,6 +190,64 @@ function ImageBlock({ block }: { block: any }) {
           imageUrl={urlFor(block.image).width(3840).quality(90).auto('format').url()}
           alt={block.alt || block.title || ''}
           onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// ============================================
+// Mosaic Block - 2-column masonry grid
+// ============================================
+function MosaicBlock({ block }: { block: any }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  if (!block.images || block.images.length === 0) return null
+
+  return (
+    <>
+      <div className="columns-1 sm:columns-2 gap-4 space-y-4">
+        {block.images.map((item: any, idx: number) => {
+          if (!item.image?.asset) return null
+          
+          const imageSrc = urlFor(item.image).width(800).quality(85).auto('format').url()
+          const imageSrcSet = `
+            ${urlFor(item.image).width(400).quality(80).auto('format').url()} 400w,
+            ${urlFor(item.image).width(600).quality(85).auto('format').url()} 600w,
+            ${urlFor(item.image).width(800).quality(85).auto('format').url()} 800w,
+            ${urlFor(item.image).width(1200).quality(85).auto('format').url()} 1200w
+          `.trim()
+
+          return (
+            <div key={item._key || idx} className="break-inside-avoid">
+              <img
+                src={imageSrc}
+                srcSet={imageSrcSet}
+                sizes="(max-width: 640px) 100vw, 50vw"
+                alt={item.alt || item.caption || ''}
+                className="w-full h-auto cursor-pointer hover:opacity-95 transition-opacity"
+                onClick={() => setLightboxIndex(idx)}
+                loading="lazy"
+              />
+              {item.caption && (
+                <p className="mt-1 text-xs text-gray-500">{item.caption}</p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {block.caption && (
+        <p className="mt-4 text-sm text-gray-600 text-center">{block.caption}</p>
+      )}
+
+      {/* Mosaic Lightbox with navigation */}
+      {lightboxIndex !== null && block.images && (
+        <GalleryLightbox
+          images={block.images}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
         />
       )}
     </>
