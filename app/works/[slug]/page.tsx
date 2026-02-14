@@ -47,6 +47,17 @@ const workBySlugQuery = groq`
                 images[0].asset->url
               )
             }
+          },
+          _type == "pdfLink" => {
+            ...,
+            "pdf": {
+              "asset": pdf.asset-> {
+                _id,
+                url,
+                originalFilename,
+                size
+              }
+            }
           }
         }
       },
