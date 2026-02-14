@@ -159,6 +159,29 @@ export default function WorkContent({ work }: WorkContentProps) {
             )}
           </Link>
         )
+      },
+      pdfLink: ({ children, value }) => {
+        const pdfUrl = value?.pdf?.asset?.url
+        if (!pdfUrl) {
+          return <span className="text-gray-400">{children}</span>
+        }
+        
+        const target = value?.openInNewTab !== false ? '_blank' : '_self'
+        const rel = value?.openInNewTab !== false ? 'noopener noreferrer' : undefined
+        
+        return (
+          <a 
+            href={pdfUrl} 
+            target={target}
+            rel={rel}
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+          >
+            {children}
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+            </svg>
+          </a>
+        )
       }
     },
     block: {
