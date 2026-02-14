@@ -90,14 +90,14 @@ function TextBlock({ content }: { content: any[] }) {
       pdfLink: ({ value, children }) => {
         console.log('PDF Link - Full value:', JSON.stringify(value, null, 2))
         
-        // Try all possible paths
-        const pdfUrl = value?.pdf?.asset?.url || value?.asset?.url || value?.url
+        // The GROQ query returns: { pdf: { asset: { url: "..." } } }
+        const pdfUrl = value?.pdf?.asset?.url
         
         console.log('PDF URL found:', pdfUrl)
         
         if (!pdfUrl) {
-          console.warn('No PDF URL - returning plain text')
-          return <span className="text-red-500 font-bold">{children} [PDF ERROR - CHECK CONSOLE]</span>
+          console.warn('No PDF URL - value structure:', value)
+          return <span className="text-red-500 font-bold">{children} [PDF NOT FOUND]</span>
         }
         
         const target = value?.openInNewTab !== false ? '_blank' : '_self'
@@ -108,7 +108,7 @@ function TextBlock({ content }: { content: any[] }) {
             href={pdfUrl} 
             target={target}
             rel={rel}
-            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1 font-bold"
+            className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
           >
             {children}
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
