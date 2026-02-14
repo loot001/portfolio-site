@@ -91,10 +91,21 @@ function TextBlock({ content }: { content: any[] }) {
       },
       // Link to PDF
       pdfLink: ({ value, children }: any) => {
-        const pdfUrl = value?.pdf?.asset?.url
-        if (!pdfUrl) return <span>{children}</span>
-        const target = value?.openInNewTab ? '_blank' : '_self'
-        const rel = value?.openInNewTab ? 'noopener noreferrer' : undefined
+        // Try multiple potential paths for the PDF URL
+        const pdfUrl = value?.pdf?.asset?.url || value?.pdf?.url
+        
+        // Debug logging
+        console.log('pdfLink value:', value)
+        console.log('pdfUrl:', pdfUrl)
+        
+        if (!pdfUrl) {
+          console.warn('No PDF URL found in pdfLink')
+          return <span className="text-gray-400">{children}</span>
+        }
+        
+        const target = value?.openInNewTab !== false ? '_blank' : '_self'
+        const rel = value?.openInNewTab !== false ? 'noopener noreferrer' : undefined
+        
         return (
           <a 
             href={pdfUrl} 
