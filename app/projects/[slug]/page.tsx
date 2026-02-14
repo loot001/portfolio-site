@@ -17,6 +17,9 @@ const projectBySlugQuery = groq`
     year,
     projectType,
     excerpt,
+    description,
+    dimensions,
+    "materials": materials[]->name,
     statement,
     "thumbnail": coalesce(
       featuredImage.asset->url,
@@ -179,15 +182,25 @@ export default async function ProjectPage({
       {/* Project Header */}
       <div className="mb-12">
         <h1 className="text-4xl font-bold mb-4">{project.title}</h1>
-        <div className="text-gray-600 mb-6">
-          {project.year}
-          {project.projectType && ` • ${project.projectType}`}
+        <div className="text-gray-600 space-y-1 mb-6">
+          <p>{project.year}</p>
+          {project.projectType && <p className="capitalize">{project.projectType.replace('-', ' ')}</p>}
+          {project.dimensions && <p>{project.dimensions}</p>}
+          {project.materials && project.materials.length > 0 && (
+            <p>{project.materials.join(', ')}</p>
+          )}
         </div>
         
         {/* Project Description/Statement */}
         {project.excerpt && (
           <p className="text-lg text-gray-700 max-w-3xl mb-6">
             {project.excerpt}
+          </p>
+        )}
+        
+        {project.description && (
+          <p className="text-gray-700 max-w-3xl mb-6 whitespace-pre-wrap">
+            {project.description}
           </p>
         )}
         
