@@ -3,15 +3,16 @@
   width: 100%;
   height: 70vh;
   overflow: hidden;
-  background: #000;
+  background: #fff;
+  padding: 100px;
 }
 
 .slide {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 100px;
+  left: 100px;
+  right: 100px;
+  bottom: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -29,68 +30,85 @@
 
 .image {
   width: 100%;
-  height: 100%;
-  object-fit: contain; /* Images fit within viewport, show black bg */
+  height: calc(100% - 60px); /* Reserve space for caption below */
+  object-fit: contain;
   object-position: center;
   display: block;
 }
 
 .titleOverlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 3rem 2rem 2rem 2rem;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 50%, transparent 100%);
+  width: 100%;
+  padding: 1rem 0 0 0;
+  text-align: center;
+  background: transparent;
   pointer-events: none;
 }
 
 .title {
-  font-size: 2.5rem;
-  font-weight: 300;
-  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #000;
   margin: 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-align: center;
 }
 
 .loading {
   width: 100%;
   height: 100%;
-  background: #000;
+  background: #fff;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
+  .slideshow {
+    padding: 80px;
+  }
+  
+  .slide {
+    top: 80px;
+    left: 80px;
+    right: 80px;
+    bottom: 80px;
+  }
+  
   .title {
-    font-size: 2rem;
+    font-size: 0.8125rem;
   }
 }
 
 @media (max-width: 768px) {
   .slideshow {
     height: 50vh;
+    padding: 60px;
+  }
+  
+  .slide {
+    top: 60px;
+    left: 60px;
+    right: 60px;
+    bottom: 60px;
   }
   
   .title {
-    font-size: 1.5rem;
-  }
-  
-  .titleOverlay {
-    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    font-size: 0.75rem;
   }
 }
 
 @media (max-width: 480px) {
   .slideshow {
     height: 40vh;
+    padding: 40px;
+  }
+  
+  .slide {
+    top: 40px;
+    left: 40px;
+    right: 40px;
+    bottom: 40px;
   }
   
   .title {
-    font-size: 1.25rem;
-  }
-  
-  .titleOverlay {
-    padding: 1.5rem 1rem 1rem 1rem;
+    font-size: 0.6875rem;
   }
 }
