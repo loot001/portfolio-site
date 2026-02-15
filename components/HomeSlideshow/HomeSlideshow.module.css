@@ -1,18 +1,20 @@
 .slideshow {
   position: relative;
   width: 100%;
+  max-width: 1280px; /* Match max-w-7xl */
+  margin: 0 auto;
   height: 70vh;
   overflow: hidden;
   background: #fff;
-  padding: 60px;
+  padding: 80px 32px; /* Vertical 80px, horizontal matches lg:px-8 (2rem = 32px) */
 }
 
 .slide {
   position: absolute;
-  top: 60px;
-  left: 60px;
-  right: 60px;
-  bottom: 60px;
+  top: 80px;
+  left: 32px;
+  right: 32px;
+  bottom: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -62,14 +64,14 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .slideshow {
-    padding: 50px;
+    padding: 60px 24px; /* Match sm:px-6 */
   }
   
   .slide {
-    top: 50px;
-    left: 50px;
-    right: 50px;
-    bottom: 50px;
+    top: 60px;
+    left: 24px;
+    right: 24px;
+    bottom: 60px;
   }
   
   .title {
@@ -80,13 +82,13 @@
 @media (max-width: 768px) {
   .slideshow {
     height: 50vh;
-    padding: 40px;
+    padding: 40px 16px; /* Match px-4 */
   }
   
   .slide {
     top: 40px;
-    left: 40px;
-    right: 40px;
+    left: 16px;
+    right: 16px;
     bottom: 40px;
   }
   
@@ -98,13 +100,13 @@
 @media (max-width: 480px) {
   .slideshow {
     height: 40vh;
-    padding: 30px;
+    padding: 30px 16px; /* Match px-4 */
   }
   
   .slide {
     top: 30px;
-    left: 30px;
-    right: 30px;
+    left: 16px;
+    right: 16px;
     bottom: 30px;
   }
   
