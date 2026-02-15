@@ -7,10 +7,9 @@ import styles from './HomeSlideshow.module.css';
 export default function HomeSlideshow({ works }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [nextIndex, setNextIndex] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [fadeState, setFadeState] = useState('showing'); // 'showing' or 'transitioning'
+  const [isLoaded, setIsLoaded] = useState(false);
   
-  // Shuffle works on mount to get random order
   const [shuffledWorks] = useState(() => {
     if (!works || works.length === 0) return [];
     const shuffled = [...works];
@@ -21,20 +20,20 @@ export default function HomeSlideshow({ works }) {
     return shuffled;
   });
 
-  // Preload first few images
+  // Preload all images
   useEffect(() => {
     if (shuffledWorks.length === 0) return;
     
-    const imagesToPreload = shuffledWorks.slice(0, 3);
     let loadedCount = 0;
+    const totalImages = Math.min(shuffledWorks.length, 10);
     
-    imagesToPreload.forEach((work) => {
+    shuffledWorks.slice(0, totalImages).forEach((work) => {
       if (work.imageUrl) {
         const img = new Image();
-        img.onload = () => {
+        img.onload = img.onerror = () => {
           loadedCount++;
-          if (loadedCount === imagesToPreload.length) {
-            setImagesLoaded(true);
+          if (loadedCount === totalImages) {
+            setIsLoaded(true);
           }
         };
         img.src = work.imageUrl + '?w=2560&h=1440&fit=max&auto=format';
@@ -42,62 +41,57 @@ export default function HomeSlideshow({ works }) {
     });
   }, [shuffledWorks]);
 
-  // Slideshow interval
+  // Slideshow with proper timing
   useEffect(() => {
-    if (!imagesLoaded || shuffledWorks.length === 0) return;
+    if (!isLoaded || shuffledWorks.length === 0) return;
     
-    const interval = setInterval(() => {
-      setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      setFadeState('transitioning');
       
-      // After 3 seconds (transition complete), update indices
+      // After fade completes (3s), update indices and reset
       setTimeout(() => {
         setCurrentIndex(nextIndex);
         setNextIndex((nextIndex + 1) % shuffledWorks.length);
-        setIsTransitioning(false);
+        setFadeState('showing');
       }, 3000);
-    }, 6000); // Change image every 6 seconds (3s visible + 3s transition)
+    }, 3000); // Show for 3 seconds before starting transition
 
-    return () => clearInterval(interval);
-  }, [nextIndex, shuffledWorks.length, imagesLoaded]);
+    return () => clearTimeout(timer);
+  }, [currentIndex, nextIndex, isLoaded, shuffledWorks.length, fadeState]);
 
-  if (!shuffledWorks || shuffledWorks.length === 0) {
-    return null;
+  if (!shuffledWorks || shuffledWorks.length === 0 || !isLoaded) {
+    return (
+      <div className={styles.slideshow}>
+        <div className={styles.loading}></div>
+      </div>
+    );
   }
-
-  const currentWork = shuffledWorks[currentIndex];
-  const nextWork = shuffledWorks[nextIndex];
 
   return (
     <div className={styles.slideshow}>
       {/* Current image */}
-      {currentWork?.imageUrl && (
-        <Link 
-          href={`/works/${currentWork.slug}`}
-          className={`${styles.slide} ${styles.current}`}
-        >
-          <img
-            src={currentWork.imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
-            alt={currentWork.title}
-            className={styles.image}
-            loading="eager"
-          />
-        </Link>
-      )}
+      <Link 
+        href={`/works/${shuffledWorks[currentIndex].slug}`}
+        className={`${styles.slide} ${styles.current} ${fadeState === 'transitioning' ? styles.fadeOut : ''}`}
+      >
+        <img
+          src={shuffledWorks[currentIndex].imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
+          alt={shuffledWorks[currentIndex].title}
+          className={styles.image}
+        />
+      </Link>
 
-      {/* Next image (fades in during transition) */}
-      {nextWork?.imageUrl && (
-        <Link 
-          href={`/works/${nextWork.slug}`}
-          className={`${styles.slide} ${styles.next} ${isTransitioning ? styles.visible : ''}`}
-        >
-          <img
-            src={nextWork.imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
-            alt={nextWork.title}
-            className={styles.image}
-            loading="eager"
-          />
-        </Link>
-      )}
+      {/* Next image */}
+      <Link 
+        href={`/works/${shuffledWorks[nextIndex].slug}`}
+        className={`${styles.slide} ${styles.next} ${fadeState === 'transitioning' ? styles.fadeIn : ''}`}
+      >
+        <img
+          src={shuffledWorks[nextIndex].imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
+          alt={shuffledWorks[nextIndex].title}
+          className={styles.image}
+        />
+      </Link>
     </div>
   );
 }
