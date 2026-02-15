@@ -18,12 +18,10 @@ interface LightboxProps {
 export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: LightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   
-  // Zoom state
-  const [scale, setScale] = useState(1)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [isZoomingOut, setIsZoomingOut] = useState(false)
-  const dragStart = useRef({ x: 0, y: 0 })
+  // Use refs for live gesture values to avoid re-render during gesture
+  const currentScale = useRef(1)
+  const currentPosition = useRef({ x: 0, y: 0 })
+  const imageRef = useRef<HTMLImageElement>(null)
   
   // Touch/swipe handling
   const touchStartX = useRef(0)
@@ -33,193 +31,127 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   // Pinch zoom handling
   const touchStartDistance = useRef(0)
   const touchStartScale = useRef(1)
+  const isGesturing = useRef(false)
   
-  // Double-tap to reset zoom
+  // Double-tap
   const lastTapTime = useRef(0)
-  const animationTimeouts = useRef<NodeJS.Timeout[]>([])
 
   // Reset zoom when changing images
   useEffect(() => {
-    setScale(1)
-    setPosition({ x: 0, y: 0 })
-    setIsDragging(false)
-    setIsZoomingOut(false)
+    currentScale.current = 1
+    currentPosition.current = { x: 0, y: 0 }
+    if (imageRef.current) {
+      imageRef.current.style.transform = 'scale(1) translate(0px, 0px)'
+    }
   }, [currentIndex])
 
   // Reset to initial index when opened
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIndex)
-      setScale(1)
-      setPosition({ x: 0, y: 0 })
-      setIsDragging(false)
-      setIsZoomingOut(false)
+      currentScale.current = 1
+      currentPosition.current = { x: 0, y: 0 }
+      if (imageRef.current) {
+        imageRef.current.style.transform = 'scale(1) translate(0px, 0px)'
+      }
     }
   }, [isOpen, initialIndex])
 
-  // Cleanup animation timeouts on unmount or close
-  useEffect(() => {
-    return () => {
-      animationTimeouts.current.forEach(timeout => clearTimeout(timeout))
-      animationTimeouts.current = []
-    }
-  }, [isOpen])
-
-  // Fail-safe: Reset zoom animation flag if it gets stuck
-  useEffect(() => {
-    if (isZoomingOut) {
-      const timeout = setTimeout(() => {
-        setIsZoomingOut(false)
-      }, 1000) // Max 1 second for any zoom animation
-      
-      return () => clearTimeout(timeout)
-    }
-  }, [isZoomingOut])
-
-  // Fail-safe: Reset dragging state on touch cancel
-  useEffect(() => {
-    const handleTouchCancel = () => {
-      setIsDragging(false)
-    }
-    
-    window.addEventListener('touchcancel', handleTouchCancel)
-    return () => window.removeEventListener('touchcancel', handleTouchCancel)
-  }, [])
-
   const goToPrevious = useCallback(() => {
-    if (scale === 1) { // Only allow navigation when not zoomed
+    if (currentScale.current === 1) {
       setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
     }
-  }, [images.length, scale])
+  }, [images.length])
 
   const goToNext = useCallback(() => {
-    if (scale === 1) { // Only allow navigation when not zoomed
+    if (currentScale.current === 1) {
       setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
     }
-  }, [images.length, scale])
+  }, [images.length])
 
-  // Helper: Get distance between two touch points
+  // Update image transform directly via ref (no React re-render)
+  const updateImageTransform = () => {
+    if (imageRef.current) {
+      const scale = currentScale.current
+      const pos = currentPosition.current
+      imageRef.current.style.transform = `scale(${scale}) translate(${pos.x / scale}px, ${pos.y / scale}px)`
+      imageRef.current.style.cursor = scale > 1 ? 'grab' : 'default'
+    }
+  }
+
   const getTouchDistance = (touches: React.TouchList) => {
     const dx = touches[0].clientX - touches[1].clientX
     const dy = touches[0].clientY - touches[1].clientY
     return Math.sqrt(dx * dx + dy * dy)
   }
 
-  // Handle touch gestures (swipe OR pinch-zoom OR pan)
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation() // Prevent touches from affecting page behind
-    
-    // Don't interfere with button clicks
-    if ((e.target as HTMLElement).closest('button')) {
-      return
-    }
+    if ((e.target as HTMLElement).closest('button')) return
 
     if (e.touches.length === 2) {
-      // Two fingers = pinch zoom
-      e.preventDefault()
+      // Pinch zoom start
+      isGesturing.current = true
       touchStartDistance.current = getTouchDistance(e.touches)
-      touchStartScale.current = scale
-      isSwiping.current = false
+      touchStartScale.current = currentScale.current
     } else if (e.touches.length === 1) {
       touchStartX.current = e.touches[0].clientX
       touchStartY.current = e.touches[0].clientY
       isSwiping.current = false
-      
-      if (scale > 1) {
-        // When zoomed, prepare for panning
-        e.preventDefault() // Prevent scroll only when panning
-        setIsDragging(true)
-        dragStart.current = {
-          x: e.touches[0].clientX - position.x,
-          y: e.touches[0].clientY - position.y,
-        }
-      }
+      isGesturing.current = currentScale.current > 1
     }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation() // Prevent touches from affecting page behind
-    
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && isGesturing.current) {
       // Pinch zoom
       e.preventDefault()
       const currentDistance = getTouchDistance(e.touches)
       const scaleChange = currentDistance / touchStartDistance.current
-      const newScale = Math.min(Math.max(1, touchStartScale.current * scaleChange), 4)
+      currentScale.current = Math.min(Math.max(1, touchStartScale.current * scaleChange), 4)
       
-      // Trigger smooth two-step zoom-out animation when returning to 1x
-      if (newScale === 1 && scale > 1) {
-        setIsZoomingOut(true)
-        setPosition({ x: 0, y: 0 })
-        const timeout1 = setTimeout(() => {
-          setScale(1)
-          const timeout2 = setTimeout(() => setIsZoomingOut(false), 300)
-          animationTimeouts.current.push(timeout2)
-        }, 200)
-        animationTimeouts.current.push(timeout1)
-      } else {
-        setScale(newScale)
-        if (newScale === 1) {
-          setPosition({ x: 0, y: 0 })
-        }
+      if (currentScale.current === 1) {
+        currentPosition.current = { x: 0, y: 0 }
       }
+      
+      updateImageTransform()
     } else if (e.touches.length === 1) {
-      if (scale > 1 && isDragging) {
+      const deltaX = Math.abs(touchStartX.current - e.touches[0].clientX)
+      const deltaY = Math.abs(touchStartY.current - e.touches[0].clientY)
+      
+      if (currentScale.current > 1 && isGesturing.current) {
         // Pan when zoomed
         e.preventDefault()
-        setPosition({
-          x: e.touches[0].clientX - dragStart.current.x,
-          y: e.touches[0].clientY - dragStart.current.y,
-        })
-      } else if (scale === 1) {
-        // Swipe detection when NOT zoomed
-        const deltaX = Math.abs(touchStartX.current - e.touches[0].clientX)
-        const deltaY = Math.abs(touchStartY.current - e.touches[0].clientY)
-        
-        if (deltaX > 10 && deltaX > deltaY) {
-          e.preventDefault() // Prevent scroll only when swiping
-          isSwiping.current = true
+        currentPosition.current = {
+          x: currentPosition.current.x + (e.touches[0].clientX - touchStartX.current),
+          y: currentPosition.current.y + (e.touches[0].clientY - touchStartY.current)
         }
+        touchStartX.current = e.touches[0].clientX
+        touchStartY.current = e.touches[0].clientY
+        updateImageTransform()
+      } else if (currentScale.current === 1 && deltaX > 10 && deltaX > deltaY) {
+        isSwiping.current = true
       }
     }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation() // Prevent touches from affecting page behind
-    setIsDragging(false)
-    
-    // Double-tap to reset zoom (mobile)
-    if (e.touches.length === 0 && scale > 1) {
+    // Double-tap to reset zoom
+    if (e.touches.length === 0 && currentScale.current > 1) {
       const now = Date.now()
       if (now - lastTapTime.current < 300) {
-        // Double tap detected - smoothly animate back
-        setIsZoomingOut(true)
-        
-        // Step 1: Center the image (animate position to 0,0 while keeping zoom)
-        setPosition({ x: 0, y: 0 })
-        
-        // Step 2: After centering completes, zoom out
-        const timeout1 = setTimeout(() => {
-          setScale(1)
-          
-          // Reset animation flag after zoom completes
-          const timeout2 = setTimeout(() => {
-            setIsZoomingOut(false)
-          }, 300)
-          animationTimeouts.current.push(timeout2)
-        }, 200) // Wait for center animation
-        animationTimeouts.current.push(timeout1)
+        currentScale.current = 1
+        currentPosition.current = { x: 0, y: 0 }
+        updateImageTransform()
       }
       lastTapTime.current = now
     }
     
-    if (scale === 1 && isSwiping.current) {
-      // Handle swipe navigation when not zoomed
+    // Swipe navigation
+    if (currentScale.current === 1 && isSwiping.current && e.changedTouches[0]) {
       const touchEndX = e.changedTouches[0].clientX
       const deltaX = touchStartX.current - touchEndX
-      const minSwipeDistance = 30
       
-      if (Math.abs(deltaX) > minSwipeDistance) {
+      if (Math.abs(deltaX) > 30) {
         if (deltaX > 0) {
           goToNext()
         } else {
@@ -228,59 +160,21 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       }
     }
     
+    isGesturing.current = false
     isSwiping.current = false
   }
 
   // Desktop: Scroll wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
-    e.stopPropagation() // Prevent wheel from affecting page behind
-    
     const delta = e.deltaY > 0 ? -0.1 : 0.1
-    const newScale = Math.min(Math.max(1, scale + delta), 4)
+    currentScale.current = Math.min(Math.max(1, currentScale.current + delta), 4)
     
-    // Trigger smooth two-step zoom-out animation when returning to 1x
-    if (newScale === 1 && scale > 1) {
-      setIsZoomingOut(true)
-      setPosition({ x: 0, y: 0 })
-      const timeout1 = setTimeout(() => {
-        setScale(1)
-        const timeout2 = setTimeout(() => setIsZoomingOut(false), 300)
-        animationTimeouts.current.push(timeout2)
-      }, 200)
-      animationTimeouts.current.push(timeout1)
-    } else {
-      setScale(newScale)
-      if (newScale === 1) {
-        setPosition({ x: 0, y: 0 })
-      }
+    if (currentScale.current === 1) {
+      currentPosition.current = { x: 0, y: 0 }
     }
-  }
-
-  // Desktop: Mouse drag when zoomed
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (scale > 1) {
-      setIsDragging(true)
-      dragStart.current = {
-        x: e.clientX - position.x,
-        y: e.clientY - position.y,
-      }
-    }
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (isDragging && scale > 1) {
-      setPosition({
-        x: e.clientX - dragStart.current.x,
-        y: e.clientY - dragStart.current.y,
-      })
-    }
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
+    
+    updateImageTransform()
   }
 
   // Lock body scroll and keyboard navigation
@@ -293,7 +187,6 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       if (e.key === 'ArrowRight') goToNext()
     }
 
-    // Lock scroll — fixes iOS Safari and Chrome mobile scroll-through
     const scrollY = window.scrollY
     document.body.style.position = 'fixed'
     document.body.style.top = `-${scrollY}px`
@@ -305,8 +198,6 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      
-      // Restore scroll position
       document.body.style.position = ''
       document.body.style.top = ''
       document.body.style.left = ''
@@ -327,13 +218,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClose()
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onMouseMove={(e) => e.stopPropagation()}
-      onMouseUp={(e) => e.stopPropagation()}
+      onClick={onClose}
     >
       {/* Close button */}
       <button
@@ -341,87 +226,64 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
           e.stopPropagation()
           onClose()
         }}
-        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors sm:top-4 touch-auto"
-        aria-label="Close lightbox"
+        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors touch-auto"
         style={{ touchAction: 'auto' }}
+        aria-label="Close lightbox"
       >
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
-      {/* Previous button - hidden on touch devices and when zoomed */}
-      {images.length > 1 && scale === 1 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            goToPrevious()
-          }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block touch-auto"
-          aria-label="Previous image"
-          style={{ touchAction: 'auto' }}
-        >
-          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+      {/* Previous/Next buttons - desktop only, hidden when zoomed */}
+      {images.length > 1 && currentScale.current === 1 && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goToPrevious()
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block"
+            aria-label="Previous image"
+          >
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goToNext()
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block"
+            aria-label="Next image"
+          >
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
       )}
 
-      {/* Next button - hidden on touch devices and when zoomed */}
-      {images.length > 1 && scale === 1 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            goToNext()
-          }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block touch-auto"
-          aria-label="Next image"
-          style={{ touchAction: 'auto' }}
-        >
-          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      )}
-
-      {/* Swipe/zoom instruction - mobile only */}
+      {/* Instructions */}
       {images.length > 1 && (
         <p className="absolute top-16 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
-          {scale === 1 ? 'Swipe to navigate • Pinch to zoom' : 'Double-tap to zoom out'}
+          Swipe to navigate • Pinch to zoom
         </p>
       )}
 
-      {/* Zoom indicator - desktop */}
-      {scale > 1 && (
-        <div className="absolute top-4 left-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full pointer-events-none hidden sm:block">
-          {Math.round(scale * 100)}%
-        </div>
-      )}
-
-      {/* Image container */}
-      <div
-        className="flex items-center justify-center touch-none"
-        style={{ touchAction: 'none' }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
+      {/* Image */}
+      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <img
+          ref={imageRef}
           src={currentImage.src}
           alt={currentImage.alt}
           className="max-w-[90vw] max-h-[85vh] object-contain select-none"
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
           style={{
-            transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-            cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-            transition: isDragging 
-              ? 'none' 
-              : isZoomingOut 
-                ? 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)' // Smooth coordinated animation
-                : 'transform 0.1s ease-out',
+            transform: 'scale(1) translate(0px, 0px)',
+            transition: isGesturing.current ? 'none' : 'transform 0.2s ease-out',
             touchAction: 'none',
           }}
         />
