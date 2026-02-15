@@ -32,6 +32,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   // Pinch zoom handling
   const touchStartDistance = useRef(0)
   const touchStartScale = useRef(1)
+  
+  // Double-tap to reset zoom
+  const lastTapTime = useRef(0)
 
   // Reset zoom when changing images
   useEffect(() => {
@@ -69,6 +72,11 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   // Handle touch gestures (swipe OR pinch-zoom OR pan)
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't interfere with button clicks
+    if ((e.target as HTMLElement).closest('button')) {
+      return
+    }
+
     if (e.touches.length === 2) {
       // Two fingers = pinch zoom
       e.preventDefault()
@@ -82,6 +90,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       
       if (scale > 1) {
         // When zoomed, prepare for panning
+        e.preventDefault() // Prevent scroll only when panning
         setIsDragging(true)
         dragStart.current = {
           x: e.touches[0].clientX - position.x,
@@ -92,10 +101,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault() // Prevent all touch-scroll
-    
     if (e.touches.length === 2) {
       // Pinch zoom
+      e.preventDefault()
       const currentDistance = getTouchDistance(e.touches)
       const scaleChange = currentDistance / touchStartDistance.current
       const newScale = Math.min(Math.max(1, touchStartScale.current * scaleChange), 4)
@@ -107,6 +115,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
     } else if (e.touches.length === 1) {
       if (scale > 1 && isDragging) {
         // Pan when zoomed
+        e.preventDefault()
         setPosition({
           x: e.touches[0].clientX - dragStart.current.x,
           y: e.touches[0].clientY - dragStart.current.y,
@@ -117,6 +126,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         const deltaY = Math.abs(touchStartY.current - e.touches[0].clientY)
         
         if (deltaX > 10 && deltaX > deltaY) {
+          e.preventDefault() // Prevent scroll only when swiping
           isSwiping.current = true
         }
       }
@@ -125,6 +135,17 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     setIsDragging(false)
+    
+    // Double-tap to reset zoom (mobile)
+    if (e.touches.length === 0 && scale > 1) {
+      const now = Date.now()
+      if (now - lastTapTime.current < 300) {
+        // Double tap detected - reset zoom
+        setScale(1)
+        setPosition({ x: 0, y: 0 })
+      }
+      lastTapTime.current = now
+    }
     
     if (scale === 1 && isSwiping.current) {
       // Handle swipe navigation when not zoomed
@@ -219,7 +240,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center overscroll-none touch-none"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center overscroll-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -228,7 +249,10 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
     >
       {/* Close button */}
       <button
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClose()
+        }}
         className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors sm:top-4"
         aria-label="Close lightbox"
       >
@@ -272,7 +296,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       {/* Swipe/zoom instruction - mobile only */}
       {images.length > 1 && (
         <p className="absolute top-16 left-0 right-0 text-center text-white/60 text-sm sm:hidden pointer-events-none">
-          {scale === 1 ? 'Swipe to navigate • Pinch to zoom' : 'Pinch to zoom out'}
+          {scale === 1 ? 'Swipe to navigate • Pinch to zoom' : 'Double-tap to zoom out'}
         </p>
       )}
 
