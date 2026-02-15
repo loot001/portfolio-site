@@ -4,15 +4,15 @@
   height: 70vh;
   overflow: hidden;
   background: #fff;
-  padding: 100px;
+  padding: 60px;
 }
 
 .slide {
   position: absolute;
-  top: 100px;
-  left: 100px;
-  right: 100px;
-  bottom: 100px;
+  top: 60px;
+  left: 60px;
+  right: 60px;
+  bottom: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -62,14 +62,14 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .slideshow {
-    padding: 80px;
+    padding: 50px;
   }
   
   .slide {
-    top: 80px;
-    left: 80px;
-    right: 80px;
-    bottom: 80px;
+    top: 50px;
+    left: 50px;
+    right: 50px;
+    bottom: 50px;
   }
   
   .title {
@@ -80,14 +80,14 @@
 @media (max-width: 768px) {
   .slideshow {
     height: 50vh;
-    padding: 60px;
+    padding: 40px;
   }
   
   .slide {
-    top: 60px;
-    left: 60px;
-    right: 60px;
-    bottom: 60px;
+    top: 40px;
+    left: 40px;
+    right: 40px;
+    bottom: 40px;
   }
   
   .title {
@@ -98,14 +98,14 @@
 @media (max-width: 480px) {
   .slideshow {
     height: 40vh;
-    padding: 40px;
+    padding: 30px;
   }
   
   .slide {
-    top: 40px;
-    left: 40px;
-    right: 40px;
-    bottom: 40px;
+    top: 30px;
+    left: 30px;
+    right: 30px;
+    bottom: 30px;
   }
   
   .title {
