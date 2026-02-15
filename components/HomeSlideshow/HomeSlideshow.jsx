@@ -6,10 +6,9 @@ import styles from './HomeSlideshow.module.css';
 
 export default function HomeSlideshow({ works }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [fadeState, setFadeState] = useState('showing'); // 'showing' or 'transitioning'
   const [isLoaded, setIsLoaded] = useState(false);
   
+  // Shuffle works once on mount
   const [shuffledWorks] = useState(() => {
     if (!works || works.length === 0) return [];
     const shuffled = [...works];
@@ -20,7 +19,7 @@ export default function HomeSlideshow({ works }) {
     return shuffled;
   });
 
-  // Preload all images
+  // Preload first 10 images
   useEffect(() => {
     if (shuffledWorks.length === 0) return;
     
@@ -41,23 +40,16 @@ export default function HomeSlideshow({ works }) {
     });
   }, [shuffledWorks]);
 
-  // Slideshow with proper timing
+  // Simple reliable interval
   useEffect(() => {
     if (!isLoaded || shuffledWorks.length === 0) return;
     
-    const timer = setTimeout(() => {
-      setFadeState('transitioning');
-      
-      // After fade completes (3s), update indices and reset
-      setTimeout(() => {
-        setCurrentIndex(nextIndex);
-        setNextIndex((nextIndex + 1) % shuffledWorks.length);
-        setFadeState('showing');
-      }, 3000);
-    }, 3000); // Show for 3 seconds before starting transition
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % shuffledWorks.length);
+    }, 6000); // Change every 6 seconds
 
-    return () => clearTimeout(timer);
-  }, [currentIndex, nextIndex, isLoaded, shuffledWorks.length, fadeState]);
+    return () => clearInterval(interval);
+  }, [isLoaded, shuffledWorks.length]);
 
   if (!shuffledWorks || shuffledWorks.length === 0 || !isLoaded) {
     return (
@@ -69,29 +61,22 @@ export default function HomeSlideshow({ works }) {
 
   return (
     <div className={styles.slideshow}>
-      {/* Current image */}
-      <Link 
-        href={`/works/${shuffledWorks[currentIndex].slug}`}
-        className={`${styles.slide} ${styles.current} ${fadeState === 'transitioning' ? styles.fadeOut : ''}`}
-      >
-        <img
-          src={shuffledWorks[currentIndex].imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
-          alt={shuffledWorks[currentIndex].title}
-          className={styles.image}
-        />
-      </Link>
-
-      {/* Next image */}
-      <Link 
-        href={`/works/${shuffledWorks[nextIndex].slug}`}
-        className={`${styles.slide} ${styles.next} ${fadeState === 'transitioning' ? styles.fadeIn : ''}`}
-      >
-        <img
-          src={shuffledWorks[nextIndex].imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
-          alt={shuffledWorks[nextIndex].title}
-          className={styles.image}
-        />
-      </Link>
+      {shuffledWorks.map((work, index) => (
+        <Link
+          key={work._id}
+          href={`/works/${work.slug}`}
+          className={`${styles.slide} ${index === currentIndex ? styles.active : ''}`}
+        >
+          <img
+            src={work.imageUrl + '?w=2560&h=1440&fit=max&auto=format'}
+            alt={work.title}
+            className={styles.image}
+          />
+          <div className={styles.titleOverlay}>
+            <h2 className={styles.title}>{work.title}</h2>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

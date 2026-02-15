@@ -12,73 +12,85 @@
   left: 0;
   width: 100%;
   height: 100%;
-  display: block;
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Images fit within viewport, show black bg */
   object-position: center;
   display: block;
 }
 
-/* Current image - visible by default */
-.slide.current {
-  z-index: 1;
-  opacity: 1;
-  pointer-events: auto;
-  transition: opacity 3s cubic-bezier(0.4, 0.0, 0.2, 1);
+.titleOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3rem 2rem 2rem 2rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 50%, transparent 100%);
+  pointer-events: none;
 }
 
-/* When current fades out */
-.slide.current.fadeOut {
-  opacity: 0;
-  pointer-events: none; /* Not clickable when fading out */
+.title {
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: #fff;
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
-/* Next image - hidden by default */
-.slide.next {
-  z-index: 2; /* Always on top */
-  opacity: 0;
-  pointer-events: none; /* Not clickable when hidden */
-  transition: opacity 3s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-/* When next fades in */
-.slide.next.fadeIn {
-  opacity: 1;
-  pointer-events: auto; /* Clickable when fading in */
-}
-
-/* Loading state */
 .loading {
   width: 100%;
   height: 100%;
   background: #000;
 }
 
-/* Hover effect */
-.slide:hover {
-  transform: scale(1.01);
-  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1),
-              opacity 3s cubic-bezier(0.4, 0.0, 0.2, 1);
+/* Responsive */
+@media (max-width: 1024px) {
+  .title {
+    font-size: 2rem;
+  }
 }
 
-/* Responsive sizing */
 @media (max-width: 768px) {
   .slideshow {
     height: 50vh;
   }
   
-  .slide:hover {
-    transform: none;
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .titleOverlay {
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .slideshow {
     height: 40vh;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+  
+  .titleOverlay {
+    padding: 1.5rem 1rem 1rem 1rem;
   }
 }
