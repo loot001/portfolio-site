@@ -22,6 +22,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [isZoomingOut, setIsZoomingOut] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
   
   // Touch/swipe handling
@@ -72,6 +73,8 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   // Handle touch gestures (swipe OR pinch-zoom OR pan)
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation() // Prevent touches from affecting page behind
+    
     // Don't interfere with button clicks
     if ((e.target as HTMLElement).closest('button')) {
       return
@@ -101,16 +104,28 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation() // Prevent touches from affecting page behind
+    
     if (e.touches.length === 2) {
       // Pinch zoom
       e.preventDefault()
       const currentDistance = getTouchDistance(e.touches)
       const scaleChange = currentDistance / touchStartDistance.current
       const newScale = Math.min(Math.max(1, touchStartScale.current * scaleChange), 4)
-      setScale(newScale)
       
-      if (newScale === 1) {
+      // Trigger smooth two-step zoom-out animation when returning to 1x
+      if (newScale === 1 && scale > 1) {
+        setIsZoomingOut(true)
         setPosition({ x: 0, y: 0 })
+        setTimeout(() => {
+          setScale(1)
+          setTimeout(() => setIsZoomingOut(false), 300)
+        }, 200)
+      } else {
+        setScale(newScale)
+        if (newScale === 1) {
+          setPosition({ x: 0, y: 0 })
+        }
       }
     } else if (e.touches.length === 1) {
       if (scale > 1 && isDragging) {
@@ -134,15 +149,28 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation() // Prevent touches from affecting page behind
     setIsDragging(false)
     
     // Double-tap to reset zoom (mobile)
     if (e.touches.length === 0 && scale > 1) {
       const now = Date.now()
       if (now - lastTapTime.current < 300) {
-        // Double tap detected - reset zoom
-        setScale(1)
+        // Double tap detected - smoothly animate back
+        setIsZoomingOut(true)
+        
+        // Step 1: Center the image (animate position to 0,0 while keeping zoom)
         setPosition({ x: 0, y: 0 })
+        
+        // Step 2: After centering completes, zoom out
+        setTimeout(() => {
+          setScale(1)
+          
+          // Reset animation flag after zoom completes
+          setTimeout(() => {
+            setIsZoomingOut(false)
+          }, 300)
+        }, 200) // Wait for center animation
       }
       lastTapTime.current = now
     }
@@ -168,17 +196,30 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   // Desktop: Scroll wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
+    e.stopPropagation() // Prevent wheel from affecting page behind
+    
     const delta = e.deltaY > 0 ? -0.1 : 0.1
     const newScale = Math.min(Math.max(1, scale + delta), 4)
-    setScale(newScale)
     
-    if (newScale === 1) {
+    // Trigger smooth two-step zoom-out animation when returning to 1x
+    if (newScale === 1 && scale > 1) {
+      setIsZoomingOut(true)
       setPosition({ x: 0, y: 0 })
+      setTimeout(() => {
+        setScale(1)
+        setTimeout(() => setIsZoomingOut(false), 300)
+      }, 200)
+    } else {
+      setScale(newScale)
+      if (newScale === 1) {
+        setPosition({ x: 0, y: 0 })
+      }
     }
   }
 
   // Desktop: Mouse drag when zoomed
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (scale > 1) {
       setIsDragging(true)
       dragStart.current = {
@@ -189,6 +230,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (isDragging && scale > 1) {
       setPosition({
         x: e.clientX - dragStart.current.x,
@@ -245,7 +287,13 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
-      onClick={onClose}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClose()
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseMove={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
     >
       {/* Close button */}
       <button
@@ -325,7 +373,11 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
           style={{
             transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
             cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+            transition: isDragging 
+              ? 'none' 
+              : isZoomingOut 
+                ? 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)' // Smooth coordinated animation
+                : 'transform 0.1s ease-out',
           }}
         />
       </div>
