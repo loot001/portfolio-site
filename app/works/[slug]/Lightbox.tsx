@@ -282,7 +282,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center overscroll-none"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center overscroll-none touch-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -301,8 +301,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
           e.stopPropagation()
           onClose()
         }}
-        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors sm:top-4"
+        className="absolute top-4 right-4 z-10 p-2 text-white/80 hover:text-white transition-colors sm:top-4 touch-auto"
         aria-label="Close lightbox"
+        style={{ touchAction: 'auto' }}
       >
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -316,8 +317,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
             e.stopPropagation()
             goToPrevious()
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block touch-auto"
           aria-label="Previous image"
+          style={{ touchAction: 'auto' }}
         >
           <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -332,8 +334,9 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
             e.stopPropagation()
             goToNext()
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 text-white/80 hover:text-white transition-colors hidden sm:block touch-auto"
           aria-label="Next image"
+          style={{ touchAction: 'auto' }}
         >
           <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -357,7 +360,8 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
 
       {/* Image container */}
       <div
-        className="flex items-center justify-center"
+        className="flex items-center justify-center touch-none"
+        style={{ touchAction: 'none' }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -378,6 +382,7 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
               : isZoomingOut 
                 ? 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)' // Smooth coordinated animation
                 : 'transform 0.1s ease-out',
+            touchAction: 'none',
           }}
         />
       </div>
