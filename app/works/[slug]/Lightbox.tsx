@@ -36,11 +36,14 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   
   // Double-tap to reset zoom
   const lastTapTime = useRef(0)
+  const animationTimeouts = useRef<NodeJS.Timeout[]>([])
 
   // Reset zoom when changing images
   useEffect(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    setIsDragging(false)
+    setIsZoomingOut(false)
   }, [currentIndex])
 
   // Reset to initial index when opened
@@ -49,8 +52,39 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       setCurrentIndex(initialIndex)
       setScale(1)
       setPosition({ x: 0, y: 0 })
+      setIsDragging(false)
+      setIsZoomingOut(false)
     }
   }, [isOpen, initialIndex])
+
+  // Cleanup animation timeouts on unmount or close
+  useEffect(() => {
+    return () => {
+      animationTimeouts.current.forEach(timeout => clearTimeout(timeout))
+      animationTimeouts.current = []
+    }
+  }, [isOpen])
+
+  // Fail-safe: Reset zoom animation flag if it gets stuck
+  useEffect(() => {
+    if (isZoomingOut) {
+      const timeout = setTimeout(() => {
+        setIsZoomingOut(false)
+      }, 1000) // Max 1 second for any zoom animation
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [isZoomingOut])
+
+  // Fail-safe: Reset dragging state on touch cancel
+  useEffect(() => {
+    const handleTouchCancel = () => {
+      setIsDragging(false)
+    }
+    
+    window.addEventListener('touchcancel', handleTouchCancel)
+    return () => window.removeEventListener('touchcancel', handleTouchCancel)
+  }, [])
 
   const goToPrevious = useCallback(() => {
     if (scale === 1) { // Only allow navigation when not zoomed
@@ -117,10 +151,12 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       if (newScale === 1 && scale > 1) {
         setIsZoomingOut(true)
         setPosition({ x: 0, y: 0 })
-        setTimeout(() => {
+        const timeout1 = setTimeout(() => {
           setScale(1)
-          setTimeout(() => setIsZoomingOut(false), 300)
+          const timeout2 = setTimeout(() => setIsZoomingOut(false), 300)
+          animationTimeouts.current.push(timeout2)
         }, 200)
+        animationTimeouts.current.push(timeout1)
       } else {
         setScale(newScale)
         if (newScale === 1) {
@@ -163,14 +199,16 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
         setPosition({ x: 0, y: 0 })
         
         // Step 2: After centering completes, zoom out
-        setTimeout(() => {
+        const timeout1 = setTimeout(() => {
           setScale(1)
           
           // Reset animation flag after zoom completes
-          setTimeout(() => {
+          const timeout2 = setTimeout(() => {
             setIsZoomingOut(false)
           }, 300)
+          animationTimeouts.current.push(timeout2)
         }, 200) // Wait for center animation
+        animationTimeouts.current.push(timeout1)
       }
       lastTapTime.current = now
     }
@@ -205,10 +243,12 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
     if (newScale === 1 && scale > 1) {
       setIsZoomingOut(true)
       setPosition({ x: 0, y: 0 })
-      setTimeout(() => {
+      const timeout1 = setTimeout(() => {
         setScale(1)
-        setTimeout(() => setIsZoomingOut(false), 300)
+        const timeout2 = setTimeout(() => setIsZoomingOut(false), 300)
+        animationTimeouts.current.push(timeout2)
       }, 200)
+      animationTimeouts.current.push(timeout1)
     } else {
       setScale(newScale)
       if (newScale === 1) {
