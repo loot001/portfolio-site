@@ -1,10 +1,10 @@
-// app/page.tsx — Homepage with experiment + featured works below
+// app/page.tsx — Homepage with slideshow + featured works below
 
 import Image from 'next/image'
 import Link from 'next/link'
 import { client } from '@/lib/sanity.client'
 import { groq } from 'next-sanity'
-import NeonatalCutUp from '@/components/NeonatalCutUp'
+import HomeSlideshow from '@/components/HomeSlideshow/HomeSlideshow'
 
 export const revalidate = 60
 
@@ -28,17 +28,31 @@ const homeQuery = groq`
   }
 `
 
+const slideshowQuery = groq`
+  *[_type == "work" && defined(contentBlocks) && count(contentBlocks[_type == "imageBlock"]) > 0] {
+    _id,
+    title,
+    "slug": slug.current,
+    "imageUrl": contentBlocks[_type == "imageBlock"][0].image.asset->url
+  }
+`
+
 async function getFeaturedWorks() {
   return await client.fetch(homeQuery)
 }
 
+async function getSlideshowWorks() {
+  return await client.fetch(slideshowQuery)
+}
+
 export default async function HomePage() {
   const works = await getFeaturedWorks()
+  const slideshowWorks = await getSlideshowWorks()
 
   return (
     <>
-      {/* Full-viewport experiment */}
-      <NeonatalCutUp />
+      {/* Full-viewport slideshow */}
+      <HomeSlideshow works={slideshowWorks} />
 
       {/* Featured works below the fold */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
