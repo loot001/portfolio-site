@@ -1,20 +1,20 @@
 .slideshow {
   position: relative;
   width: 100%;
-  max-width: 1280px; /* Match max-w-7xl */
+  max-width: 1280px;
   margin: 0 auto;
   height: 70vh;
   overflow: hidden;
   background: #fff;
-  padding: 80px 32px; /* Vertical 80px, horizontal matches lg:px-8 (2rem = 32px) */
+  padding: 30px 32px 20px 32px; /* Reduced: top 30px, bottom 20px */
 }
 
 .slide {
   position: absolute;
-  top: 80px;
+  top: 30px;
   left: 32px;
   right: 32px;
-  bottom: 80px;
+  bottom: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -32,7 +32,7 @@
 
 .image {
   width: 100%;
-  height: calc(100% - 60px); /* Reserve space for caption below */
+  height: calc(100% - 40px); /* Reserve space for caption below */
   object-fit: contain;
   object-position: center;
   display: block;
@@ -40,15 +40,15 @@
 
 .titleOverlay {
   width: 100%;
-  padding: 1rem 0 0 0;
+  padding: 0.5rem 0 0 0; /* Reduced from 1rem */
   text-align: center;
   background: transparent;
   pointer-events: none;
 }
 
 .title {
-  font-size: 0.875rem;
-  font-weight: 400;
+  font-size: 0.875rem; /* Match text-sm */
+  font-weight: 500; /* Match font-medium */
   color: #000;
   margin: 0;
   letter-spacing: 0.01em;
@@ -64,53 +64,54 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .slideshow {
-    padding: 60px 24px; /* Match sm:px-6 */
+    padding: 25px 24px 15px 24px;
   }
   
   .slide {
-    top: 60px;
+    top: 25px;
     left: 24px;
     right: 24px;
-    bottom: 60px;
+    bottom: 15px;
   }
   
   .title {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
 }
 
 @media (max-width: 768px) {
   .slideshow {
     height: 50vh;
-    padding: 40px 16px; /* Match px-4 */
+    padding: 20px 16px 10px 16px; /* Much tighter on mobile */
   }
   
   .slide {
-    top: 40px;
+    top: 20px;
     left: 16px;
     right: 16px;
-    bottom: 40px;
+    bottom: 10px;
   }
   
   .title {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 
 @media (max-width: 480px) {
   .slideshow {
     height: 40vh;
-    padding: 30px 16px; /* Match px-4 */
+    padding: 15px 16px 10px 16px; /* Very tight on small mobile */
   }
   
   .slide {
-    top: 30px;
+    top: 15px;
     left: 16px;
     right: 16px;
-    bottom: 30px;
+    bottom: 10px;
   }
   
   .title {
-    font-size: 0.6875rem;
+    font-size: 0.8125rem; /* Slightly smaller on tiny screens */
   }
 }
+
