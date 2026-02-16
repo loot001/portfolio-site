@@ -1,0 +1,64 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 0;
+  padding: 0;
+  background: #000;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.thumbnail {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+  will-change: transform;
+  cursor: pointer;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Responsive grid columns - no gaps at any size */
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  }
+}
+
+@media (min-width: 1536px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  }
+}
+
+/* Ultra-wide displays */
+@media (min-width: 2560px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  }
+}
+
+/* Mobile touch optimization */
+@media (hover: none) and (pointer: coarse) {
+  .thumbnail {
+    transition: transform 0.2s ease-out;
+  }
+  
+  .thumbnail:active {
+    transform: scale(1.3);
+  }
+}
