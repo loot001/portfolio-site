@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import styles from './HomeViewSelector.module.css';
 
 const VIEWS = [
-  { id: 'gallery', label: 'Gallery View', description: 'Slideshow + Recent Works' },
-  { id: 'dense-grid', label: 'Archive Grid', description: 'All Works Grid' },
+  { id: 'gallery', label: 'Works Slideshow', description: 'Slideshow + Recent Works' },
+  { id: 'dense-grid', label: 'All Works', description: 'All Works Grid' },
   // Future views can be added here:
   // { id: 'timeline', label: 'Timeline View', description: 'Chronological' },
   // { id: 'experimental', label: 'Experimental', description: 'WebGL/3D' },

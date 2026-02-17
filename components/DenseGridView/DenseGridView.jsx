@@ -101,9 +101,9 @@ export default function DenseGridView({ works }) {
     };
   }, []);
 
-  // Get first image URL for work
+  // Get first image URL for work - prioritize featuredImage
   const getWorkImageUrl = (work) => {
-    const image = work.images?.[0] || work.featuredImage;
+    const image = work.featuredImage || work.images?.[0];
     if (!image) return null;
     
     return urlFor(image)
@@ -116,7 +116,7 @@ export default function DenseGridView({ works }) {
 
   // Get higher res image for preview - full image, no crop
   const getPreviewImageUrl = (work) => {
-    const image = work.images?.[0] || work.featuredImage;
+    const image = work.featuredImage || work.images?.[0];
     if (!image) return null;
     
     // Get image with max width but preserve aspect ratio

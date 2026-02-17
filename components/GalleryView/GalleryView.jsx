@@ -7,7 +7,7 @@ import { urlFor } from '@/lib/sanity.client';
 export default function GalleryView({ slideshowWorks, recentWorks }) {
   // Prepare works for slideshow - add imageUrl property
   const preparedSlideshowWorks = slideshowWorks.map(work => {
-    const image = work.images?.[0] || work.featuredImage;
+    const image = work.featuredImage || work.images?.[0];
     const imageUrl = image ? urlFor(image).url() : null;
     
     return {
@@ -38,7 +38,7 @@ export default function GalleryView({ slideshowWorks, recentWorks }) {
 
 function WorkCard({ work }) {
   const getWorkImage = () => {
-    const image = work.images?.[0] || work.featuredImage;
+    const image = work.featuredImage || work.images?.[0];
     if (!image) return null;
     
     return urlFor(image)
