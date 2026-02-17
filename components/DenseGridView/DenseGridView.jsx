@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { urlFor } from '@/lib/sanity';
+import { urlFor } from '@/lib/sanity.client';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './DenseGridView.module.css';
@@ -49,8 +49,8 @@ export default function DenseGridView({ works }) {
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     // Ripple effect: closer = bigger scale
-    // Maximum influence radius: 200px
-    const maxRadius = 200;
+    // Maximum influence radius: 300px (increased for larger thumbnails)
+    const maxRadius = 300;
     if (distance > maxRadius) return 1;
     
     // Ease-out cubic for smooth falloff
@@ -72,7 +72,10 @@ export default function DenseGridView({ works }) {
     
     // Set 2-second timer for preview panel
     hoverTimeoutRef.current = setTimeout(() => {
-      setPreviewWork(work);
+      // Only set preview if work has valid data
+      if (work && work._id && work.title && work.slug) {
+        setPreviewWork(work);
+      }
     }, 2000);
   }, []);
 
@@ -104,22 +107,21 @@ export default function DenseGridView({ works }) {
     if (!image) return null;
     
     return urlFor(image)
-      .width(200)
-      .height(200)
+      .width(300)
+      .height(300)
       .fit('crop')
       .auto('format')
       .url();
   };
 
-  // Get higher res image for preview
+  // Get higher res image for preview - full image, no crop
   const getPreviewImageUrl = (work) => {
     const image = work.images?.[0] || work.featuredImage;
     if (!image) return null;
     
+    // Get image with max width but preserve aspect ratio
     return urlFor(image)
-      .width(400)
-      .height(400)
-      .fit('crop')
+      .width(1600)
       .auto('format')
       .url();
   };
@@ -209,8 +211,8 @@ function Thumbnail({ work, imageUrl, onHover, onLeave, calculateScale, isHovered
       <Image
         src={imageUrl}
         alt={work.title}
-        width={50}
-        height={50}
+        width={150}
+        height={150}
         loading="lazy"
         className={styles.thumbnailImage}
       />

@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import styles from './PreviewPanel.module.css';
 
 export default function PreviewPanel({ work, imageUrl, onClose }) {
   const panelRef = useRef(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Safety check
+  if (!work || !imageUrl) return null;
 
   // Close on escape key
   useEffect(() => {
@@ -53,22 +56,24 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
         </button>
 
         <div className={styles.imageContainer}>
-          <Image
+          {!imageLoaded && (
+            <div className={styles.loading}>Loading...</div>
+          )}
+          <img
             src={imageUrl}
             alt={work.title}
-            width={400}
-            height={400}
             className={styles.image}
-            priority
+            onLoad={() => setImageLoaded(true)}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
           />
         </div>
 
         <div className={styles.info}>
-          <h3 className={styles.title}>{work.title}</h3>
+          <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
           {work.year && (
             <p className={styles.year}>{work.year}</p>
           )}
-          {work.materials && (
+          {work.materials && typeof work.materials === 'string' && (
             <p className={styles.materials}>{work.materials}</p>
           )}
         </div>

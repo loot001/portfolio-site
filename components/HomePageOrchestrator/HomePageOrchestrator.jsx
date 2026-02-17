@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import HomeViewSelector from '../HomeViewSelector/HomeViewSelector';
-import GalleryView from '../GalleryView/GalleryView';
-import DenseGridView from '../DenseGridView/DenseGridView';
+import HomeViewSelector from '@/components/HomeViewSelector/HomeViewSelector';
+import GalleryView from '@/components/GalleryView/GalleryView';
+import DenseGridView from '@/components/DenseGridView/DenseGridView';
 import styles from './HomePageOrchestrator.module.css';
 
 const DEFAULT_VIEW = 'gallery';

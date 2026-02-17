@@ -24,14 +24,11 @@ export default function HomeViewSelector({ currentView, onViewChange }) {
         aria-expanded={isOpen}
         aria-label="Switch homepage view"
       >
-        <span className={styles.currentView}>
-          <span className={styles.label}>{selectedView.label}</span>
-          <span className={styles.description}>{selectedView.description}</span>
-        </span>
+        <span className={styles.label}>{selectedView.label}</span>
         <svg 
           className={`${styles.chevron} ${isOpen ? styles.open : ''}`}
-          width="16" 
-          height="16" 
+          width="12" 
+          height="12" 
           viewBox="0 0 16 16"
           fill="none"
         >
@@ -61,8 +58,7 @@ export default function HomeViewSelector({ currentView, onViewChange }) {
                   setIsOpen(false);
                 }}
               >
-                <span className={styles.optionLabel}>{view.label}</span>
-                <span className={styles.optionDescription}>{view.description}</span>
+                {view.label}
               </button>
             ))}
           </div>

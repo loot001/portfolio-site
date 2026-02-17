@@ -1,13 +1,25 @@
 'use client';
 
-import HomeSlideshow from '../HomeSlideshow/HomeSlideshow';
+import HomeSlideshow from '@/components/HomeSlideshow/HomeSlideshow';
 import styles from './GalleryView.module.css';
+import { urlFor } from '@/lib/sanity.client';
 
 export default function GalleryView({ slideshowWorks, recentWorks }) {
+  // Prepare works for slideshow - add imageUrl property
+  const preparedSlideshowWorks = slideshowWorks.map(work => {
+    const image = work.images?.[0] || work.featuredImage;
+    const imageUrl = image ? urlFor(image).url() : null;
+    
+    return {
+      ...work,
+      imageUrl
+    };
+  }).filter(work => work.imageUrl); // Only include works with valid images
+  
   return (
     <div className={styles.container}>
       {/* Existing slideshow */}
-      <HomeSlideshow works={slideshowWorks} />
+      <HomeSlideshow works={preparedSlideshowWorks} />
       
       {/* Recent Works Section */}
       {recentWorks && recentWorks.length > 0 && (
@@ -62,6 +74,3 @@ function WorkCard({ work }) {
     </a>
   );
 }
-
-// Import urlFor from your Sanity config
-import { urlFor } from '@/lib/sanity';

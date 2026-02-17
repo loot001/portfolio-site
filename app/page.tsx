@@ -1,4 +1,4 @@
-import { client } from '@/lib/sanity';
+import { client } from '@/lib/sanity.client';
 import HomePageOrchestrator from '@/components/HomePageOrchestrator/HomePageOrchestrator';
 
 export const revalidate = 60; // Revalidate every 60 seconds
@@ -9,7 +9,7 @@ async function getSlideshowWorks() {
     `*[_type == "work" && defined(images) && count(images) > 0] {
       _id,
       title,
-      slug,
+      "slug": slug.current,
       images,
       featuredImage
     }`
@@ -23,7 +23,7 @@ async function getRecentWorks() {
     `*[_type == "work"] | order(year desc, _createdAt desc)[0...6] {
       _id,
       title,
-      slug,
+      "slug": slug.current,
       year,
       images,
       featuredImage
@@ -38,7 +38,7 @@ async function getAllWorks() {
     `*[_type == "work"] | order(year desc, _createdAt desc) {
       _id,
       title,
-      slug,
+      "slug": slug.current,
       year,
       materials,
       images,
