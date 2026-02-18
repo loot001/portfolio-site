@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import HomeViewSelector from '@/components/HomeViewSelector/HomeViewSelector';
 import GalleryView from '@/components/GalleryView/GalleryView';
-import DenseGridView from '@/components/DenseGridView/DenseGridView';
+import MosaicGridView from '@/components/MosaicGridView/MosaicGridView';
 import styles from './HomePageOrchestrator.module.css';
 
 const DEFAULT_VIEW = 'gallery';
@@ -53,7 +53,7 @@ export default function HomePageOrchestrator({ slideshowWorks, recentWorks, allW
         )}
         
         {currentView === 'dense-grid' && (
-          <DenseGridView works={allWorks} />
+          <MosaicGridView works={allWorks} />
         )}
         
         {/* Future views can be added here:

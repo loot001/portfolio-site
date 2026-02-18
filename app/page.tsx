@@ -3,46 +3,46 @@ import HomePageOrchestrator from '@/components/HomePageOrchestrator/HomePageOrch
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
-// Query all works with images for slideshow
+// Query all works with images for slideshow - only published works
 async function getSlideshowWorks() {
   const works = await client.fetch(
-    `*[_type == "work" && defined(images) && count(images) > 0] {
+    `*[_type == "work" && !(_id in path("drafts.**"))] {
       _id,
       title,
       "slug": slug.current,
-      images,
-      featuredImage
+      featuredImage,
+      images
     }`
   );
   return works;
 }
 
-// Query recent works (last 6 for gallery view)
+// Query recent works (last 6 for gallery view) - only published works
 async function getRecentWorks() {
   const works = await client.fetch(
-    `*[_type == "work"] | order(year desc, _createdAt desc)[0...6] {
+    `*[_type == "work" && !(_id in path("drafts.**"))] | order(year desc, _createdAt desc)[0...6] {
       _id,
       title,
       "slug": slug.current,
       year,
-      images,
-      featuredImage
+      featuredImage,
+      images
     }`
   );
   return works;
 }
 
-// Query ALL works for dense grid view
+// Query ALL works for mosaic grid view - only published works
 async function getAllWorks() {
   const works = await client.fetch(
-    `*[_type == "work"] | order(year desc, _createdAt desc) {
+    `*[_type == "work" && !(_id in path("drafts.**"))] | order(year desc, _createdAt desc) {
       _id,
       title,
       "slug": slug.current,
       year,
       materials,
-      images,
-      featuredImage
+      featuredImage,
+      images
     }`
   );
   return works;
