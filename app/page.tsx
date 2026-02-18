@@ -1,5 +1,5 @@
 import { client } from '@/lib/sanity.client';
-import MosaicGridView from '@/components/HomePageOrchestrator/MosaicGridView';
+import MosaicGridView from '@/components/MosaicGridView/MosaicGridView';
 
 export const revalidate = 60;
 
