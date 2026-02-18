@@ -9,7 +9,6 @@ export default function MosaicGridView({ works }) {
   const [previewWork, setPreviewWork] = useState(null);
   const [numColumns, setNumColumns] = useState(3);
 
-  // Respond to viewport width for column count
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -22,24 +21,24 @@ export default function MosaicGridView({ works }) {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Filter out works with no image
-  const validWorks = works.filter(work => work.featuredImage || work.images?.[0]);
+  // Image priority: featuredImage → firstContentImage (matches page.tsx query)
+  const getImage = (work) => work.featuredImage || work.firstContentImage || null;
 
-  // Get thumbnail URL
-  const getImageUrl = (work) => {
-    const image = work.featuredImage || work.images?.[0];
-    if (!image) return null;
-    return urlFor(image).width(800).auto('format').url();
+  const validWorks = works.filter(work => getImage(work));
+
+  const getThumbUrl = (work) => {
+    const img = getImage(work);
+    if (!img) return null;
+    return urlFor(img).width(800).auto('format').url();
   };
 
-  // Get preview URL
   const getPreviewUrl = (work) => {
-    const image = work.featuredImage || work.images?.[0];
-    if (!image) return null;
-    return urlFor(image).width(1600).auto('format').url();
+    const img = getImage(work);
+    if (!img) return null;
+    return urlFor(img).width(1600).auto('format').url();
   };
 
-  // Distribute works across columns by index — top-aligned, no balancing
+  // Distribute works into columns top-down by index — no CSS balancing
   const columns = Array.from({ length: numColumns }, () => []);
   validWorks.forEach((work, i) => {
     columns[i % numColumns].push(work);
@@ -47,13 +46,12 @@ export default function MosaicGridView({ works }) {
 
   return (
     <>
-      {/* Manual flex columns — no CSS columns balancing */}
       <div className={styles.grid}>
         {columns.map((col, colIdx) => (
           <div key={colIdx} className={styles.column}>
             {col.map((work) => {
-              const imgUrl = getImageUrl(work);
-              if (!imgUrl) return null;
+              const thumbUrl = getThumbUrl(work);
+              if (!thumbUrl) return null;
               return (
                 <div
                   key={work._id}
@@ -61,7 +59,7 @@ export default function MosaicGridView({ works }) {
                   onClick={() => setPreviewWork(work)}
                 >
                   <img
-                    src={imgUrl}
+                    src={thumbUrl}
                     alt={work.title || ''}
                     className={styles.image}
                     loading="lazy"
@@ -77,7 +75,6 @@ export default function MosaicGridView({ works }) {
         ))}
       </div>
 
-      {/* Preview panel */}
       {previewWork && (
         <PreviewPanel
           work={previewWork}
