@@ -1,5 +1,5 @@
 import { client } from '@/lib/sanity.client';
-import MosaicGridView from '@/components/MosaicGridView/MosaicGridView';
+import MosaicGridView from '@/components/HomePageOrchestrator/MosaicGridView';
 
 export const revalidate = 60;
 
@@ -12,7 +12,7 @@ async function getAllWorks() {
       year,
       materials,
       featuredImage,
-      images
+      "firstContentImage": contentBlocks[_type == "imageBlock"][0].image
     }`
   );
 }

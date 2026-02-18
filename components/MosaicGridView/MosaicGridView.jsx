@@ -8,18 +8,18 @@ import PreviewPanel from './PreviewPanel';
 export default function MosaicGridView({ works }) {
   const [previewWork, setPreviewWork] = useState(null);
 
-  const validWorks = works.filter(
-    work => work.featuredImage || (work.images && work.images.length > 0)
-  );
+  const getImage = (work) => work.featuredImage || work.firstContentImage || null;
+
+  const validWorks = works.filter(work => getImage(work) !== null);
 
   const getWorkImageUrl = (work) => {
-    const image = work.featuredImage || work.images?.[0];
+    const image = getImage(work);
     if (!image) return null;
     return urlFor(image).width(800).auto('format').url();
   };
 
   const getPreviewImageUrl = (work) => {
-    const image = work.featuredImage || work.images?.[0];
+    const image = getImage(work);
     if (!image) return null;
     return urlFor(image).width(1600).auto('format').url();
   };
