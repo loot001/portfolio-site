@@ -47,7 +47,27 @@ export const workBySlugQuery = groq`
       _key,
       
       _type == "textBlock" => {
-        content
+        content[] {
+          ...,
+          markDefs[] {
+            ...,
+            _type == "workLink" => {
+              "work": work-> {
+                "slug": slug.current
+              }
+            },
+            _type == "projectLink" => {
+              "project": project-> {
+                "slug": slug.current
+              }
+            },
+            _type == "pdfLink" => {
+              pdf {
+                asset->
+              }
+            }
+          }
+        }
       },
       
       _type == "imageBlock" => {
@@ -144,5 +164,43 @@ export const featuredWorksQuery = groq`
       contentBlocks[_type == "imageBlock"][0].alt,
       images[0].alt
     )
+  }
+`
+
+// Get About page (singleton)
+export const aboutQuery = groq`
+  *[_type == "about"][0] {
+    title,
+    heroImage {
+      asset->,
+      caption,
+      alt
+    },
+    content[] {
+      ...,
+      markDefs[] {
+        ...,
+        _type == "workLink" => {
+          "work": work-> {
+            "slug": slug.current
+          }
+        },
+        _type == "projectLink" => {
+          "project": project-> {
+            "slug": slug.current
+          }
+        },
+        _type == "pdfLink" => {
+          pdf {
+            asset->
+          }
+        }
+      },
+      // Resolve inline images within portable text
+      _type == "image" => {
+        asset->
+      }
+    },
+    seo
   }
 `

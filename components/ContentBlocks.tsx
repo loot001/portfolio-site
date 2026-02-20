@@ -87,6 +87,18 @@ function TextBlock({ content }: { content: any[] }) {
           </Link>
         )
       },
+      projectLink: ({ value, children }) => {
+        const slug = value?.project?.slug
+        if (!slug) return <span>{children}</span>
+        return (
+          <Link 
+            href={`/projects/${slug}`}
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            {children}
+          </Link>
+        )
+      },
       pdfLink: ({ value, children }) => {
         console.log('PDF Link - Full value:', JSON.stringify(value, null, 2))
         

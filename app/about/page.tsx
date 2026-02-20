@@ -1,29 +1,10 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { client, urlFor } from '@/lib/sanity.client'
 import { PortableText } from '@portabletext/react'
-import { groq } from 'next-sanity'
+import { aboutQuery } from '@/lib/sanity.queries'
 
 export const revalidate = 60
-
-const aboutQuery = groq`
-  *[_type == "about"][0] {
-    title,
-    heroImage {
-      asset->,
-      caption,
-      alt
-    },
-    content[] {
-      ...,
-      _type == "image" => {
-        asset->,
-        caption,
-        alt
-      }
-    },
-    seo
-  }
-`
 
 async function getAbout() {
   return await client.fetch(aboutQuery)
@@ -50,11 +31,53 @@ const portableTextComponents = {
     ),
   },
   marks: {
+    // External link
     link: ({ children, value }: any) => {
-      const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined
+      const target = value?.openInNewTab ? '_blank' : '_self'
+      const rel = value?.openInNewTab ? 'noreferrer noopener' : undefined
       return (
-        <a href={value.href} rel={rel} className="text-blue-600 hover:underline">
+        <a href={value.href} target={target} rel={rel} className="text-blue-600 hover:underline">
           {children}
+        </a>
+      )
+    },
+    // Link to Work
+    workLink: ({ value, children }: any) => {
+      const slug = value?.work?.slug
+      if (!slug) return <span>{children}</span>
+      return (
+        <Link href={`/works/${slug}`} className="text-blue-600 hover:underline">
+          {children}
+        </Link>
+      )
+    },
+    // Link to Project
+    projectLink: ({ value, children }: any) => {
+      const slug = value?.project?.slug
+      if (!slug) return <span>{children}</span>
+      return (
+        <Link href={`/projects/${slug}`} className="text-blue-600 hover:underline">
+          {children}
+        </Link>
+      )
+    },
+    // Link to PDF
+    pdfLink: ({ value, children }: any) => {
+      const pdfUrl = value?.pdf?.asset?.url
+      if (!pdfUrl) return <span>{children}</span>
+      const target = value?.openInNewTab !== false ? '_blank' : '_self'
+      const rel = value?.openInNewTab !== false ? 'noopener noreferrer' : undefined
+      return (
+        <a
+          href={pdfUrl}
+          target={target}
+          rel={rel}
+          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+        >
+          {children}
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+          </svg>
         </a>
       )
     },
@@ -78,7 +101,6 @@ const portableTextComponents = {
 export default async function AboutPage() {
   const about = await getAbout()
 
-  // Fallback if no About page exists yet
   if (!about) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
