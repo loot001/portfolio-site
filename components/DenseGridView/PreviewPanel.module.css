@@ -185,7 +185,7 @@
    LANDSCAPE — tighten spacing so image + info
    + CTA all fit comfortably in short viewport
    ============================================= */
-@media (max-height: 600px) and (orientation: landscape) {
+@media (orientation: landscape) {
   .backdrop {
     padding: 8px;
   }
@@ -194,6 +194,11 @@
     height: calc(100svh - 16px);
     max-height: calc(100svh - 16px);
     border-radius: 8px;
+  }
+
+  .imageContainer {
+    /* Cap image at 50svh in landscape — leaves room for info + CTA */
+    max-height: 50svh;
   }
 
   .closeButton {
