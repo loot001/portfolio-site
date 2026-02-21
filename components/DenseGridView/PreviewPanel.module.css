@@ -1,7 +1,3 @@
-/* ============================================
-   BACKDROP
-   Height set via inline JS (window.innerHeight) for reliability
-   ============================================ */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -14,9 +10,10 @@
   z-index: 2000;
   animation: fadeIn 0.2s ease;
   padding: 16px;
-  /* Fallback height — overridden by inline style from JS */
+  /* Fallback — inline style from JS overrides this */
   height: 100vh;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -24,18 +21,11 @@
   to   { opacity: 1; }
 }
 
-/* ============================================
-   PANEL
-   Height set via inline JS style (window.innerHeight - 32px)
-   Flex column: image grows, info + CTA never shrink
-   ============================================ */
 .panel {
   position: relative;
   width: 100%;
   max-width: 800px;
-  /* Fallback — overridden by inline style */
-  height: calc(100vh - 32px);
-  max-height: calc(100vh - 32px);
+  /* Inline style from JS sets exact height */
   background: #111;
   border-radius: 12px;
   overflow: hidden;
@@ -43,28 +33,22 @@
   flex-direction: column;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ============================================
-   CLOSE BUTTON
-   ============================================ */
+/* Close — absolute, never in flex flow */
 .closeButton {
   position: absolute;
   top: 12px;
   right: 12px;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,7 +62,6 @@
   transition: all 0.2s ease;
   z-index: 10;
   touch-action: manipulation;
-  flex-shrink: 0;
 }
 
 .closeButton:hover {
@@ -87,14 +70,10 @@
   transform: scale(1.05);
 }
 
-/* ============================================
-   IMAGE CONTAINER
-   flex: 1 1 auto + min-height: 0 = fills remaining space
-   never overflows panel
-   ============================================ */
+/* Image — grows to fill all space not taken by info + CTA */
 .imageContainer {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 0;        /* critical — allows flex child to shrink below content */
   background: #000;
   display: flex;
   align-items: center;
@@ -119,9 +98,7 @@
   touch-action: pinch-zoom;
 }
 
-/* ============================================
-   INFO — never shrinks, never overflows panel
-   ============================================ */
+/* Info — fixed height, never squishes */
 .info {
   flex-shrink: 0;
   padding: 16px 20px;
@@ -135,7 +112,7 @@
   color: white;
   margin: 0 0 4px 0;
   line-height: 1.2;
-  padding-right: 48px;
+  padding-right: 52px; /* clear close button */
 }
 
 .year {
@@ -151,9 +128,7 @@
   font-style: italic;
 }
 
-/* ============================================
-   CTA — never shrinks, anchored to bottom
-   ============================================ */
+/* CTA — fixed height, always at bottom */
 .cta {
   flex-shrink: 0;
   display: flex;
@@ -170,27 +145,18 @@
   touch-action: manipulation;
 }
 
-.cta:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+.cta:hover { background: rgba(255, 255, 255, 0.1); }
 
 .cta svg {
-  transition: transform 0.2s ease;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
-.cta:hover svg {
-  transform: translateX(4px);
-}
+.cta:hover svg { transform: translateX(4px); }
 
-/* ============================================
-   LANDSCAPE — tighten spacing so everything
-   fits without any scroll at all
-   ============================================ */
+/* Landscape — tighten so everything fits without any scroll */
 @media (max-height: 600px) and (orientation: landscape) {
-  .backdrop {
-    padding: 8px;
-  }
+  .backdrop { padding: 8px; }
 
   .closeButton {
     width: 32px;
@@ -204,24 +170,17 @@
     height: 16px;
   }
 
-  .info {
-    padding: 8px 14px;
-  }
+  .info { padding: 8px 14px; }
 
   .title {
     font-size: 15px;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     padding-right: 40px;
   }
 
-  .year {
-    font-size: 12px;
-    margin-bottom: 0;
-  }
+  .year { font-size: 12px; }
 
-  .materials {
-    display: none;
-  }
+  .materials { display: none; }
 
   .cta {
     padding: 10px 14px;
