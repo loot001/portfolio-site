@@ -9,6 +9,9 @@
   z-index: 2000;
   animation: fadeIn 0.2s ease;
   padding: 20px;
+  /* Allow touch scroll to reach the panel on mobile */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -176,58 +179,50 @@
   }
 }
 
-/* Landscape mobile - short viewport, side-by-side layout */
-@media (max-height: 500px) and (orientation: landscape) {
+/* Landscape on mobile/tablet — keep vertical stack but shrink image drastically */
+@media (max-height: 600px) and (orientation: landscape) {
   .backdrop {
-    padding: 10px;
+    padding: 8px;
     align-items: center;
   }
 
   .panel {
-    max-height: calc(100dvh - 20px);
-    max-width: 100%;
-    flex-direction: row;
+    max-height: calc(100dvh - 16px);
     border-radius: 8px;
+    /* Enable touch scrolling as fallback */
+    -webkit-overflow-scrolling: touch;
   }
 
   .imageContainer {
-    width: 50%;
     min-height: unset;
-    max-height: calc(100dvh - 20px);
-    flex-shrink: 0;
-    border-radius: 8px 0 0 8px;
+    max-height: 38dvh;
   }
 
   .image {
-    max-height: calc(100dvh - 20px);
-  }
-
-  .closeButton {
-    top: 10px;
-    right: 10px;
-    width: 32px;
-    height: 32px;
+    max-height: 38dvh;
   }
 
   .info {
-    padding: 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .title {
-    font-size: 18px;
+    font-size: 16px;
+    margin-bottom: 4px;
   }
 
   .year {
-    font-size: 14px;
+    font-size: 13px;
+    margin-bottom: 0;
   }
 
   .materials {
-    font-size: 12px;
+    display: none;
   }
 
   .cta {
-    padding: 14px 16px;
+    padding: 12px 16px;
     font-size: 14px;
-    margin-top: auto;
   }
 }
