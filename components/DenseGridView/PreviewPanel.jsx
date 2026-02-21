@@ -1,17 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import styles from './PreviewPanel.module.css';
 
 export default function PreviewPanel({ work, imageUrl, onClose }) {
   const panelRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [vpHeight, setVpHeight] = useState(null);
 
-  if (!work || !imageUrl) return null;
-
-  // Lock body scroll when panel is open — works on iOS Safari too
+  // Measure true viewport height (accounts for mobile browser chrome)
+  // and lock body scroll — both must run unconditionally before any return
   useEffect(() => {
+    // Capture true inner height before any layout shift
+    setVpHeight(window.innerHeight);
+
+    const onResize = () => setVpHeight(window.innerHeight);
+    window.addEventListener('resize', onResize);
+
+    // Lock body scroll — the position:fixed technique is the only
+    // method that works reliably across iOS Safari, Chrome, Firefox
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
@@ -20,6 +28,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     document.body.style.overflow = 'hidden';
 
     return () => {
+      window.removeEventListener('resize', onResize);
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
@@ -29,7 +38,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     };
   }, []);
 
-  // Close on escape key
+  // Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -38,22 +47,38 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Close on backdrop click
+  // Prevent touch-scroll bleeding through to page on iOS
+  // CSS touch-action alone is not sufficient — need preventDefault on the event
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  // Safety check — AFTER all hooks
+  if (!work || !imageUrl) return null;
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
+
+  // Use measured JS height, fallback to 100vh for SSR
+  const panelStyle = vpHeight
+    ? { height: `${vpHeight - 32}px`, maxHeight: `${vpHeight - 32}px` }
+    : {};
 
   return (
     <div
       className={styles.backdrop}
       onClick={handleBackdropClick}
+      onTouchMove={handleTouchMove}
+      style={vpHeight ? { height: `${vpHeight}px` } : {}}
     >
       <div
         ref={panelRef}
         className={styles.panel}
         onClick={(e) => e.stopPropagation()}
+        style={panelStyle}
       >
-        {/* Close button — always visible, outside scroll flow */}
+        {/* Close — absolute, always on top, never in flow */}
         <button
           className={styles.closeButton}
           onClick={onClose}
@@ -69,7 +94,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
           </svg>
         </button>
 
-        {/* Image — fills all available space between info and CTA */}
+        {/* Image — flex-grow fills remaining space after info + CTA */}
         <div className={styles.imageContainer}>
           {!imageLoaded && (
             <div className={styles.loading}>Loading...</div>
@@ -83,18 +108,16 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
           />
         </div>
 
-        {/* Info — fixed height, never squished */}
+        {/* Info — flex-shrink: 0, always full height */}
         <div className={styles.info}>
           <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
-          {work.year && (
-            <p className={styles.year}>{work.year}</p>
-          )}
+          {work.year && <p className={styles.year}>{work.year}</p>}
           {work.materials && typeof work.materials === 'string' && (
             <p className={styles.materials}>{work.materials}</p>
           )}
         </div>
 
-        {/* CTA — always anchored to bottom, never cut off */}
+        {/* CTA — flex-shrink: 0, always anchored to bottom */}
         <Link
           href={`/works/${work.slug}`}
           className={styles.cta}
