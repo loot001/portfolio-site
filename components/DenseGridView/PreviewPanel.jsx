@@ -7,13 +7,21 @@ import styles from './PreviewPanel.module.css';
 export default function PreviewPanel({ work, imageUrl, onClose }) {
   const backdropRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [panelHeight, setPanelHeight] = useState(null);
+  const [dims, setDims] = useState(null); // { height, gap }
 
-  // All hooks must run unconditionally before any early return
-
-  // 1. Measure true viewport height via JS (most reliable cross-device)
+  // 1. Measure viewport and compute gap to match CSS padding exactly
   useEffect(() => {
-    const measure = () => setPanelHeight(window.innerHeight);
+    const measure = () => {
+      const h = window.innerHeight;
+      const w = window.innerWidth;
+      // CSS landscape query: max-height 600px + landscape orientation
+      const isLandscape = w > h && h <= 600;
+      // Must match CSS padding values:
+      // landscape: padding 8px  → gap = 8*2 = 16
+      // portrait:  padding 16px → gap = 16*2 = 32
+      const gap = isLandscape ? 16 : 32;
+      setDims({ height: h, gap });
+    };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
@@ -37,10 +45,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     };
   }, []);
 
-  // 3. Non-passive touchmove prevention on the backdrop element
-  //    React attaches events passively by default — preventDefault() on
-  //    React's onTouchMove prop is silently ignored by iOS/Chrome.
-  //    Must attach directly to the DOM node with { passive: false }.
+  // 3. Non-passive touchmove on DOM node — React passive default blocks preventDefault
   useEffect(() => {
     const el = backdropRef.current;
     if (!el) return;
@@ -63,9 +68,8 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const GAP = 32; // 16px padding top + bottom
-  const backdropStyle = panelHeight ? { height: `${panelHeight}px` } : {};
-  const panelStyle   = panelHeight ? { height: `${panelHeight - GAP}px` } : {};
+  const backdropStyle = dims ? { height: `${dims.height}px` } : {};
+  const panelStyle = dims ? { height: `${dims.height - dims.gap}px` } : {};
 
   return (
     <div
