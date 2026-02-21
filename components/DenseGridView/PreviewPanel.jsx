@@ -7,27 +7,8 @@ import styles from './PreviewPanel.module.css';
 export default function PreviewPanel({ work, imageUrl, onClose }) {
   const backdropRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [dims, setDims] = useState(null); // { height, gap }
 
-  // 1. Measure viewport and compute gap to match CSS padding exactly
-  useEffect(() => {
-    const measure = () => {
-      const h = window.innerHeight;
-      const w = window.innerWidth;
-      // CSS landscape query: max-height 600px + landscape orientation
-      const isLandscape = w > h && h <= 600;
-      // Must match CSS padding values:
-      // landscape: padding 8px  → gap = 8*2 = 16
-      // portrait:  padding 16px → gap = 16*2 = 32
-      const gap = isLandscape ? 16 : 32;
-      setDims({ height: h, gap });
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-
-  // 2. Body scroll lock
+  // 1. Body scroll lock
   useEffect(() => {
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
@@ -45,7 +26,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     };
   }, []);
 
-  // 3. Non-passive touchmove on DOM node — React passive default blocks preventDefault
+  // 2. Non-passive touchmove — must be DOM-attached, not React synthetic
   useEffect(() => {
     const el = backdropRef.current;
     if (!el) return;
@@ -54,40 +35,26 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
     return () => el.removeEventListener('touchmove', prevent);
   }, []);
 
-  // 4. Escape key
+  // 3. Escape key
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Safe to return null after all hooks
   if (!work || !imageUrl) return null;
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  const backdropStyle = dims ? { height: `${dims.height}px` } : {};
-  const panelStyle = dims ? { height: `${dims.height - dims.gap}px` } : {};
 
   return (
     <div
       ref={backdropRef}
       className={styles.backdrop}
-      style={backdropStyle}
-      onClick={handleBackdropClick}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         className={styles.panel}
-        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label="Close preview"
-        >
+        <button className={styles.closeButton} onClick={onClose} aria-label="Close preview">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
