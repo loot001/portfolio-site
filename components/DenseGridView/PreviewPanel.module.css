@@ -14,6 +14,10 @@
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
+  /* Critical for iOS/Android: prevent touch scroll leaking to page behind */
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 @keyframes fadeIn {
@@ -34,6 +38,9 @@
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
+  /* Allow normal touch interactions inside panel, but no scroll bleed */
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 @keyframes slideUp {
