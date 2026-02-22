@@ -5,60 +5,64 @@ import Link from 'next/link';
 import styles from './PreviewPanel.module.css';
 
 export default function PreviewPanel({ work, imageUrl, onClose }) {
-  const panelRef = useRef(null);
+  const backdropRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Safety check
-  if (!work || !imageUrl) return null;
-
-  // Close on escape key
+  // 1. Body scroll lock
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
     };
+  }, []);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+  // 2. Non-passive touchmove — must be DOM-attached, not React synthetic
+  useEffect(() => {
+    const el = backdropRef.current;
+    if (!el) return;
+    const prevent = (e) => e.preventDefault();
+    el.addEventListener('touchmove', prevent, { passive: false });
+    return () => el.removeEventListener('touchmove', prevent);
+  }, []);
+
+  // 3. Escape key
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Close on click outside
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  if (!work || !imageUrl) return null;
 
   return (
-    <div 
+    <div
+      ref={backdropRef}
       className={styles.backdrop}
-      onClick={handleBackdropClick}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div 
-        ref={panelRef}
+      <div
         className={styles.panel}
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label="Close preview"
-        >
+        <button className={styles.closeButton} onClick={onClose} aria-label="Close preview">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path 
-              d="M18 6L6 18M6 6L18 18" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round"
-            />
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </button>
 
+        {/* Image — left column in landscape, full width in portrait */}
         <div className={styles.imageContainer}>
-          {!imageLoaded && (
-            <div className={styles.loading}>Loading...</div>
-          )}
+          {!imageLoaded && <div className={styles.loading}>Loading...</div>}
           <img
             src={imageUrl}
             alt={work.title}
@@ -68,31 +72,23 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
           />
         </div>
 
-        <div className={styles.info}>
-          <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
-          {work.year && (
-            <p className={styles.year}>{work.year}</p>
-          )}
-          {work.materials && typeof work.materials === 'string' && (
-            <p className={styles.materials}>{work.materials}</p>
-          )}
-        </div>
+        {/* Right column in landscape — wraps info + CTA so they stack vertically */}
+        <div className={styles.sidebar}>
+          <div className={styles.info}>
+            <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
+            {work.year && <p className={styles.year}>{work.year}</p>}
+            {work.materials && typeof work.materials === 'string' && (
+              <p className={styles.materials}>{work.materials}</p>
+            )}
+          </div>
 
-        <Link 
-          href={`/works/${work.slug}`}
-          className={styles.cta}
-        >
-          View Full Work
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path 
-              d="M4 10H16M16 10L10 4M16 10L10 16" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
+          <Link href={`/works/${work.slug}`} className={styles.cta}>
+            View Full Work
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10H16M16 10L10 4M16 10L10 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+        </div>
       </div>
     </div>
   );

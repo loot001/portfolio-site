@@ -1,3 +1,6 @@
+/* =============================================
+   BACKDROP — full screen lock
+   ============================================= */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -10,14 +13,11 @@
   z-index: 2000;
   animation: fadeIn 0.2s ease;
   padding: 16px;
-  /* Fallback — inline style from JS overrides this */
-  height: 100vh;
-  overflow: hidden;
   box-sizing: border-box;
-  /* Critical for iOS/Android: prevent touch scroll leaking to page behind */
+  /* Same as working Lightbox — overscroll-none touch-none */
   touch-action: none;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: auto;
+  overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -25,11 +25,13 @@
   to   { opacity: 1; }
 }
 
+/* =============================================
+   PANEL — portrait: flex column, fits viewport
+   ============================================= */
 .panel {
   position: relative;
   width: 100%;
-  max-width: 800px;
-  /* Inline style from JS sets exact height */
+  max-width: 700px;
   background: #111;
   border-radius: 12px;
   overflow: hidden;
@@ -38,9 +40,6 @@
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
-  /* Allow normal touch interactions inside panel, but no scroll bleed */
-  touch-action: pan-y;
-  overscroll-behavior: contain;
 }
 
 @keyframes slideUp {
@@ -48,14 +47,15 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Close — absolute, never in flex flow */
+/* =============================================
+   CLOSE BUTTON
+   ============================================= */
 .closeButton {
   position: absolute;
   top: 12px;
   right: 12px;
   width: 40px;
   height: 40px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,58 +68,72 @@
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 10;
-  touch-action: manipulation;
+  touch-action: auto;
+  flex-shrink: 0;
 }
 
 .closeButton:hover {
   background: rgba(0, 0, 0, 0.8);
   border-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
 }
 
-/* Image — grows to fill all space not taken by info + CTA */
+/* =============================================
+   IMAGE — portrait
+   Mirrors Lightbox: constrain image directly,
+   not the container. No flex-grow needed.
+   ============================================= */
 .imageContainer {
-  flex: 1 1 auto;
-  min-height: 0;        /* critical — allows flex child to shrink below content */
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  position: relative;
   touch-action: pinch-zoom;
 }
 
 .loading {
-  position: absolute;
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
+  padding: 40px;
 }
 
 .image {
-  width: 100%;
-  height: 100%;
+  /* Portrait: same pattern as Lightbox — direct max constraints */
+  display: block;
+  max-width: 100%;
+  max-height: 55svh;
+  width: auto;
+  height: auto;
   object-fit: contain;
   transition: opacity 0.3s ease;
-  display: block;
   touch-action: pinch-zoom;
 }
 
-/* Info — fixed height, never squishes */
+/* =============================================
+   SIDEBAR (info + CTA wrapper)
+   ============================================= */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* =============================================
+   INFO
+   ============================================= */
 .info {
-  flex-shrink: 0;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  touch-action: manipulation;
+  touch-action: auto;
 }
 
 .title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: white;
   margin: 0 0 4px 0;
   line-height: 1.2;
-  padding-right: 52px; /* clear close button */
+  padding-right: 52px;
 }
 
 .year {
@@ -135,9 +149,10 @@
   font-style: italic;
 }
 
-/* CTA — fixed height, always at bottom */
+/* =============================================
+   CTA
+   ============================================= */
 .cta {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,7 +164,7 @@
   font-weight: 500;
   text-decoration: none;
   transition: background 0.2s ease;
-  touch-action: manipulation;
+  touch-action: auto;
 }
 
 .cta:hover { background: rgba(255, 255, 255, 0.1); }
@@ -161,9 +176,67 @@
 
 .cta:hover svg { transform: translateX(4px); }
 
-/* Landscape — tighten so everything fits without any scroll */
-@media (max-height: 600px) and (orientation: landscape) {
-  .backdrop { padding: 8px; }
+/* =============================================
+   LANDSCAPE — row layout, image on left,
+   sidebar on right. Image constrained by svh
+   directly — same as Lightbox pattern.
+   ============================================= */
+@media (orientation: landscape) {
+  .backdrop {
+    padding: 8px;
+  }
+
+  .panel {
+    flex-direction: row;
+    max-width: 100%;
+    border-radius: 8px;
+  }
+
+  .imageContainer {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* In landscape, constrain image height directly to viewport */
+  .image {
+    max-height: calc(100svh - 16px);
+    max-width: 100%;
+  }
+
+  .sidebar {
+    flex: 0 0 200px;
+    width: 200px;
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info {
+    flex: 1 1 auto;
+    padding: 44px 14px 12px 14px;
+    overflow: hidden;
+  }
+
+  .title {
+    font-size: 14px;
+    margin-bottom: 4px;
+    padding-right: 0;
+  }
+
+  .year {
+    font-size: 12px;
+  }
+
+  .materials {
+    font-size: 11px;
+  }
+
+  .cta {
+    flex-shrink: 0;
+    padding: 14px;
+    font-size: 13px;
+  }
 
   .closeButton {
     width: 32px;
@@ -176,21 +249,21 @@
     width: 16px;
     height: 16px;
   }
+}
 
-  .info { padding: 8px 14px; }
-
-  .title {
-    font-size: 15px;
-    margin-bottom: 1px;
-    padding-right: 40px;
+/* =============================================
+   SMALL PORTRAIT SCREENS (iPhone SE etc)
+   ============================================= */
+@media (max-height: 700px) and (orientation: portrait) {
+  .image {
+    max-height: 45svh;
   }
 
-  .year { font-size: 12px; }
+  .info {
+    padding: 12px 16px;
+  }
 
-  .materials { display: none; }
-
-  .cta {
-    padding: 10px 14px;
-    font-size: 13px;
+  .title {
+    font-size: 17px;
   }
 }
