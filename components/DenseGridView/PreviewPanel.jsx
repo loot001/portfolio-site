@@ -60,6 +60,7 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
           </svg>
         </button>
 
+        {/* Image — left column in landscape, full width in portrait */}
         <div className={styles.imageContainer}>
           {!imageLoaded && <div className={styles.loading}>Loading...</div>}
           <img
@@ -71,20 +72,23 @@ export default function PreviewPanel({ work, imageUrl, onClose }) {
           />
         </div>
 
-        <div className={styles.info}>
-          <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
-          {work.year && <p className={styles.year}>{work.year}</p>}
-          {work.materials && typeof work.materials === 'string' && (
-            <p className={styles.materials}>{work.materials}</p>
-          )}
-        </div>
+        {/* Right column in landscape — wraps info + CTA so they stack vertically */}
+        <div className={styles.sidebar}>
+          <div className={styles.info}>
+            <h3 className={styles.title}>{work.title || 'Untitled'}</h3>
+            {work.year && <p className={styles.year}>{work.year}</p>}
+            {work.materials && typeof work.materials === 'string' && (
+              <p className={styles.materials}>{work.materials}</p>
+            )}
+          </div>
 
-        <Link href={`/works/${work.slug}`} className={styles.cta}>
-          View Full Work
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M4 10H16M16 10L10 4M16 10L10 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </Link>
+          <Link href={`/works/${work.slug}`} className={styles.cta}>
+            View Full Work
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10H16M16 10L10 4M16 10L10 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+        </div>
       </div>
     </div>
   );
