@@ -67,6 +67,9 @@ const workBySlugQuery = groq`
       platform,
       url,
       caption,
+      layout,
+      marginLeft,
+      marginRight,
       // mosaicBlock fields
       images[] {
         _key,
