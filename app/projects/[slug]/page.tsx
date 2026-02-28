@@ -21,6 +21,7 @@ const projectBySlugQuery = groq`
     dimensions,
     "materials": materials[]->name,
     statement,
+    statementLayout,
     "thumbnail": coalesce(
       featuredImage.asset->url,
       projectImages[0].asset->url
@@ -205,14 +206,14 @@ export default async function ProjectPage({
         )}
         
         {project.statement && Array.isArray(project.statement) && (
-          <div className="prose max-w-3xl">
+          <div className={`prose max-w-none text-block-margins ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
             <PortableText value={project.statement} />
           </div>
         )}
         
         {/* Handle legacy string statement */}
         {project.statement && typeof project.statement === 'string' && (
-          <div className="prose max-w-3xl">
+          <div className={`prose max-w-none text-block-margins ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
             <p className="whitespace-pre-wrap">{project.statement}</p>
           </div>
         )}
