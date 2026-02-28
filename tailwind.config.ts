@@ -15,5 +15,9 @@ const config: Config = {
     },
   },
   plugins: [],
-};
+  safelist: [
+    'lg:columns-2',
+    'lg:gap-8',
+  ],
+}
 export default config;
