@@ -203,16 +203,43 @@ export default function WorkContent({ work }: WorkContentProps) {
         <div className="space-y-8 mb-12">
           {work.contentBlocks.map((block: any) => {
             if (block._type === 'textBlock') {
+              // 2-column layout: desktop only, falls back to 1 column on tablet/phone
+              const isTwoCol = block.layout === 'twoColumn'
+
+              // Margin/indent presets (desktop only via inline style)
+              const marginPresets: Record<string, string> = {
+                none: '0',
+                small: '8%',
+                medium: '16%',
+                large: '24%',
+              }
+              const marginLeft = marginPresets[block.marginLeft as string] ?? '0'
+              const marginRight = marginPresets[block.marginRight as string] ?? '0'
+
+              const wrapperStyle = {
+                // Only apply margins on desktop (lg = 1024px+), handled via CSS class below
+                '--text-margin-left': marginLeft,
+                '--text-margin-right': marginRight,
+              } as React.CSSProperties
+
               if (typeof block.content === 'string') {
                 return (
-                  <div key={block._key} className="prose max-w-none">
+                  <div
+                    key={block._key}
+                    className={`prose max-w-none text-block-margins ${isTwoCol ? 'lg:columns-2 lg:gap-8' : ''}`}
+                    style={wrapperStyle}
+                  >
                     <p className="whitespace-pre-wrap">{block.content}</p>
                   </div>
                 )
               }
               if (Array.isArray(block.content)) {
                 return (
-                  <div key={block._key} className="prose max-w-none">
+                  <div
+                    key={block._key}
+                    className={`prose max-w-none text-block-margins ${isTwoCol ? 'lg:columns-2 lg:gap-8' : ''}`}
+                    style={wrapperStyle}
+                  >
                     <PortableText value={block.content} components={portableTextComponents} />
                   </div>
                 )

@@ -25,3 +25,10 @@ body {
     text-wrap: balance;
   }
 }
+
+@media (min-width: 1024px) {
+  .text-block-margins {
+    margin-left: var(--text-margin-left, 0);
+    margin-right: var(--text-margin-right, 0);
+  }
+}
