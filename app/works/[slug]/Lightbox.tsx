@@ -36,6 +36,11 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
   // Double-tap
   const lastTapTime = useRef(0)
 
+  // Desktop mouse drag
+  const isDragging = useRef(false)
+  const dragStartX = useRef(0)
+  const dragStartY = useRef(0)
+
   // Reset zoom when changing images
   useEffect(() => {
     currentScale.current = 1
@@ -164,6 +169,42 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
     isSwiping.current = false
   }
 
+  // Desktop: Mouse drag to pan when zoomed
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (currentScale.current <= 1) return
+    e.preventDefault()
+    isDragging.current = true
+    dragStartX.current = e.clientX
+    dragStartY.current = e.clientY
+    if (imageRef.current) imageRef.current.style.cursor = 'grabbing'
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return
+    e.preventDefault()
+    currentPosition.current = {
+      x: currentPosition.current.x + (e.clientX - dragStartX.current),
+      y: currentPosition.current.y + (e.clientY - dragStartY.current),
+    }
+    dragStartX.current = e.clientX
+    dragStartY.current = e.clientY
+    updateImageTransform()
+  }
+
+  const handleMouseUp = () => {
+    isDragging.current = false
+    if (imageRef.current && currentScale.current > 1) {
+      imageRef.current.style.cursor = 'grab'
+    }
+  }
+
+  const handleMouseLeave = () => {
+    isDragging.current = false
+    if (imageRef.current && currentScale.current > 1) {
+      imageRef.current.style.cursor = 'grab'
+    }
+  }
+
   // Desktop: Scroll wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
@@ -218,7 +259,15 @@ export default function Lightbox({ images, initialIndex = 0, isOpen, onClose }: 
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
-      onClick={onClose}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onClick={(e) => {
+        // Don't close if we were dragging
+        if (isDragging.current) return
+        onClose()
+      }}
     >
       {/* Close button */}
       <button
