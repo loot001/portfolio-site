@@ -211,6 +211,10 @@ export default async function ProjectPage({
 
       {/* Project Statement */}
       <div className="mb-12">
+        {/* TEMP DEBUG - remove after confirming */}
+        <p style={{ background: 'yellow', padding: '4px', fontSize: '12px' }}>
+          statementLayout value: "{project.statementLayout ?? 'undefined/null'}"
+        </p>
         {project.excerpt && (
           <p className="text-lg text-gray-700 max-w-3xl mb-6">
             {project.excerpt}
