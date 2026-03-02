@@ -11,7 +11,7 @@ async function getAllWorks() {
       "slug": slug.current,
       year,
       materials,
-      featuredImage,
+      thumbnail,
       "firstContentImage": contentBlocks[_type == "imageBlock"][0].image
     }`
   );

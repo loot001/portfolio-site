@@ -21,8 +21,8 @@ export default function MosaicGridView({ works }) {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Image priority: featuredImage → firstContentImage (matches page.tsx query)
-  const getImage = (work) => work.featuredImage || work.firstContentImage || null;
+  // Image priority: thumbnail → firstContentImage (matches Sanity schema)
+  const getImage = (work) => work.thumbnail || work.firstContentImage || null;
 
   const validWorks = works.filter(work => getImage(work));
 
