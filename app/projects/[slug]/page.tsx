@@ -76,7 +76,6 @@ async function getNavigation(slug: string) {
   return { prev, next }
 }
 
-// Generate dynamic metadata for SEO
 export async function generateMetadata({ 
   params 
 }: { 
@@ -86,9 +85,7 @@ export async function generateMetadata({
   const project = await getProject(slug)
   
   if (!project) {
-    return {
-      title: 'Project Not Found'
-    }
+    return { title: 'Project Not Found' }
   }
 
   const title = `${project.title}${project.year ? `, ${project.year}` : ''}`
@@ -106,14 +103,7 @@ export async function generateMetadata({
       description,
       type: 'article',
       url: `${siteConfig.url}/projects/${slug}`,
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: project.title
-        }
-      ]
+      images: [{ url: ogImage, width: 1200, height: 630, alt: project.title }]
     },
     twitter: {
       card: 'summary_large_image',
@@ -192,7 +182,6 @@ export default async function ProjectPage({
           )}
         </div>
         
-        {/* Project Description/Statement */}
         {project.excerpt && (
           <p className="text-lg text-gray-700 max-w-3xl mb-6">
             {project.excerpt}
@@ -205,16 +194,20 @@ export default async function ProjectPage({
           </p>
         )}
         
+        {/* Statement — outer div controls columns, inner div controls prose typography */}
         {project.statement && Array.isArray(project.statement) && (
-          <div className={`prose max-w-none text-block-margins ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
-            <PortableText value={project.statement} />
+          <div className={project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}>
+            <div className="prose max-w-none">
+              <PortableText value={project.statement} />
+            </div>
           </div>
         )}
         
-        {/* Handle legacy string statement */}
         {project.statement && typeof project.statement === 'string' && (
-          <div className={`prose max-w-none text-block-margins ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
-            <p className="whitespace-pre-wrap">{project.statement}</p>
+          <div className={project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}>
+            <div className="prose max-w-none">
+              <p className="whitespace-pre-wrap">{project.statement}</p>
+            </div>
           </div>
         )}
       </div>
@@ -238,9 +231,7 @@ export default async function ProjectPage({
       {/* Included Works */}
       {project.includedWorks && project.includedWorks.length > 0 && (
         <div>
-          <h2 className="text-2xl font-semibold mb-6">
-            Works in this Project
-          </h2>
+          <h2 className="text-2xl font-semibold mb-6">Works in this Project</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {project.includedWorks.map((work: any) => (
               <Link 
