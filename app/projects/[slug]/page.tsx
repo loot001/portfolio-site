@@ -211,10 +211,6 @@ export default async function ProjectPage({
 
       {/* Project Statement */}
       <div className="mb-12">
-        {/* TEMP DEBUG - remove after confirming */}
-        <p style={{ background: 'yellow', padding: '4px', fontSize: '12px' }}>
-          statementLayout value: "{project.statementLayout ?? 'undefined/null'}"
-        </p>
         {project.excerpt && (
           <p className="text-lg text-gray-700 max-w-3xl mb-6">
             {project.excerpt}
@@ -228,24 +224,26 @@ export default async function ProjectPage({
         )}
         
         {project.statement && Array.isArray(project.statement) && (
-          <div style={project.statementLayout === 'twoColumn'
-            ? { columns: 2, columnGap: '2rem' }
-            : { maxWidth: '48rem' }
-          }>
-            <div className="prose max-w-none">
-              <PortableText value={project.statement} />
-            </div>
+          <div
+            className="prose max-w-none"
+            style={project.statementLayout === 'twoColumn'
+              ? { columnCount: 2, columnGap: '2rem' }
+              : { maxWidth: '48rem' }
+            }
+          >
+            <PortableText value={project.statement} />
           </div>
         )}
         
         {project.statement && typeof project.statement === 'string' && (
-          <div style={project.statementLayout === 'twoColumn'
-            ? { columns: 2, columnGap: '2rem' }
-            : { maxWidth: '48rem' }
-          }>
-            <div className="prose max-w-none">
-              <p className="whitespace-pre-wrap">{project.statement}</p>
-            </div>
+          <div
+            className="prose max-w-none"
+            style={project.statementLayout === 'twoColumn'
+              ? { columnCount: 2, columnGap: '2rem' }
+              : { maxWidth: '48rem' }
+            }
+          >
+            <p className="whitespace-pre-wrap">{project.statement}</p>
           </div>
         )}
       </div>
