@@ -139,7 +139,10 @@ export async function generateMetadata({
   
   // Build description from available data
   let description = ''
-  if (work.workType) description += `${work.workType}. `
+  if (work.workType) {
+    const types = Array.isArray(work.workType) ? work.workType : [work.workType]
+    description += `${types.map((t: string) => t.replace(/-/g, ' ')).join(', ')}. `
+  }
   if (work.materials && work.materials.length > 0) {
     description += `${work.materials.join(', ')}. `
   }
@@ -243,7 +246,13 @@ export default async function WorkPage({
         <h1 className="text-4xl font-bold mb-4">{work.title}</h1>
         <div className="text-gray-600 space-y-1">
           <p>{work.year}</p>
-          {work.workType && <p className="capitalize">{work.workType}</p>}
+          {work.workType && work.workType.length > 0 && (
+            <p className="capitalize">
+              {(Array.isArray(work.workType) ? work.workType : [work.workType])
+                .map((t: string) => t.replace(/-/g, ' '))
+                .join(', ')}
+            </p>
+          )}
           {work.dimensions && <p>{work.dimensions}</p>}
           {work.materials && work.materials.length > 0 && (
             <p>{work.materials.join(', ')}</p>

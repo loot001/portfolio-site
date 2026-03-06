@@ -13,7 +13,7 @@ interface Work {
   slug: { current: string }
   year: string
   yearNumeric: number
-  workType?: string
+  workType?: string[]
   materials?: string[]
   themes?: string[]
   aiInvolved?: boolean
@@ -34,7 +34,11 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
   const workTypes = useMemo(() => {
     const types = new Set<string>()
     works.forEach(work => {
-      if (work.workType) types.add(work.workType)
+      if (Array.isArray(work.workType)) {
+        work.workType.forEach(t => types.add(t))
+      } else if (work.workType) {
+        types.add(work.workType)
+      }
     })
     return Array.from(types).sort()
   }, [works])
@@ -73,7 +77,10 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
       }
 
       // Type filter
-      if (selectedType !== 'all' && work.workType !== selectedType) return false
+      if (selectedType !== 'all') {
+        const types = Array.isArray(work.workType) ? work.workType : (work.workType ? [work.workType] : [])
+        if (!types.includes(selectedType)) return false
+      }
 
       // Year filter
       if (selectedYear !== 'all') {
@@ -188,8 +195,12 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
             </h3>
             <div className="text-sm text-gray-600">
               <p>{work.year}</p>
-              {work.workType && (
-                <p className="capitalize">{work.workType.replace('-', ' ')}</p>
+              {work.workType && work.workType.length > 0 && (
+                <p className="capitalize">
+                  {(Array.isArray(work.workType) ? work.workType : [work.workType])
+                    .map(t => t.replace(/-/g, ' '))
+                    .join(', ')}
+                </p>
               )}
             </div>
           </Link>
