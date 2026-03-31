@@ -4,18 +4,24 @@
 export const siteConfig = {
   name: 'Luther Thie',
   title: 'Luther Thie | Contemporary Artist',
-  description: 'Contemporary artist working with AI-collaborative practices, creating sculptures that evolve through recursive cycles between physical creation, digital photography, AI image generation, and re-materialization.',
-  url: 'https://portfolio-site-ten-liart.vercel.app', // Update this to your actual domain
+  description: 'Artist working in installation, sculpture, and mixed media, treating AI latent space as fertile ground for inspiration — cycling between physical objects, digital photography, and machine vision to produce works that question human agency and subsumption.',
+  url: 'https://lutherthie.com', // Update this to your actual domain
   ogImage: '/og-default.jpg', // We'll create a default OG image
   keywords: [
     'contemporary art',
-    'AI art',
-    'sculpture',
+    'latent space',
     'installation art',
+    'AI art',
+    'AI installation',
+    'posthuman',
+    'sculpture',
     'mixed media',
     'Luther Thie',
     'AI collaboration',
-    'generative art'
+    'generative art',
+    'painting',
+    'drawing',
+    'photography'
   ]
 }
 
