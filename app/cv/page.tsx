@@ -5,7 +5,6 @@ export default function CVPage() {
       
       <div className="mb-8 text-gray-600">
         <p className="font-medium text-lg">Luther Thie</p>
-        <p>lutherthie [at] gmail [dot] com</p>
       </div>
 
       <div className="space-y-12">
