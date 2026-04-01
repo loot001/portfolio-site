@@ -224,13 +224,13 @@ export default async function ProjectPage({
         )}
         
         {project.statement && Array.isArray(project.statement) && (
-          <div className={`prose max-w-none ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
+          <div className={project.statementLayout === 'twoColumn' ? 'prose max-w-none lg:columns-2 lg:gap-8' : 'prose max-w-3xl'}>
             <PortableText value={project.statement} />
           </div>
         )}
         
         {project.statement && typeof project.statement === 'string' && (
-          <div className={`prose max-w-none ${project.statementLayout === 'twoColumn' ? 'lg:columns-2 lg:gap-8' : 'max-w-3xl'}`}>
+          <div className={project.statementLayout === 'twoColumn' ? 'prose max-w-none lg:columns-2 lg:gap-8' : 'prose max-w-3xl'}>
             <p className="whitespace-pre-wrap">{project.statement}</p>
           </div>
         )}
