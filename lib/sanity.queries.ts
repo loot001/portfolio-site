@@ -204,3 +204,32 @@ export const aboutQuery = groq`
     seo
   }
 `
+
+// Get CV page (singleton)
+export const cvQuery = groq`
+  *[_type == "cv"][0] {
+    title,
+    content[] {
+      ...,
+      markDefs[] {
+        ...,
+        _type == "workLink" => {
+          "work": work-> {
+            "slug": slug.current
+          }
+        },
+        _type == "projectLink" => {
+          "project": project-> {
+            "slug": slug.current
+          }
+        },
+        _type == "pdfLink" => {
+          pdf {
+            asset->
+          }
+        }
+      }
+    },
+    seo
+  }
+`

@@ -1,238 +1,115 @@
-export default function CVPage() {
+import Link from 'next/link'
+import { client } from '@/lib/sanity.client'
+import { PortableText } from '@portabletext/react'
+import { cvQuery } from '@/lib/sanity.queries'
+import { generatePageMetadata } from '@/lib/metadata'
+
+export const revalidate = 60
+
+export async function generateMetadata() {
+  const cv = await client.fetch(cvQuery)
+  return generatePageMetadata({
+    title: 'CV',
+    description: cv?.seo?.metaDescription || undefined,
+    path: '/cv'
+  })
+}
+
+async function getCV() {
+  return await client.fetch(cvQuery)
+}
+
+const portableTextComponents = {
+  marks: {
+    link: ({ children, value }: any) => {
+      const target = value?.openInNewTab ? '_blank' : '_self'
+      const rel = value?.openInNewTab ? 'noreferrer noopener' : undefined
+      return (
+        <a href={value.href} target={target} rel={rel} className="text-blue-600 hover:underline">
+          {children}
+        </a>
+      )
+    },
+    workLink: ({ value, children }: any) => {
+      const slug = value?.work?.slug
+      if (!slug) return <span>{children}</span>
+      return (
+        <Link href={`/works/${slug}`} className="text-blue-600 hover:underline">
+          {children}
+        </Link>
+      )
+    },
+    projectLink: ({ value, children }: any) => {
+      const slug = value?.project?.slug
+      if (!slug) return <span>{children}</span>
+      return (
+        <Link href={`/projects/${slug}`} className="text-blue-600 hover:underline">
+          {children}
+        </Link>
+      )
+    },
+    pdfLink: ({ value, children }: any) => {
+      const pdfUrl = value?.pdf?.asset?.url
+      if (!pdfUrl) return <span>{children}</span>
+      const target = value?.openInNewTab !== false ? '_blank' : '_self'
+      const rel = value?.openInNewTab !== false ? 'noopener noreferrer' : undefined
+      return (
+        <a
+          href={pdfUrl}
+          target={target}
+          rel={rel}
+          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+        >
+          {children}
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+          </svg>
+        </a>
+      )
+    },
+  },
+  block: {
+    h2: ({ children }: any) => (
+      <h2 className="text-2xl font-bold mb-6 mt-12 border-b pb-2">{children}</h2>
+    ),
+    h3: ({ children }: any) => (
+      <h3 className="text-xl font-semibold mb-3 mt-6">{children}</h3>
+    ),
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-gray-300 pl-6 py-2 my-6 italic text-gray-700">
+        {children}
+      </blockquote>
+    ),
+    normal: ({ children }: any) => <p className="mb-4">{children}</p>,
+  },
+}
+
+export default async function CVPage() {
+  const cv = await getCV()
+
+  if (!cv) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-4xl font-bold mb-8">CV</h1>
+        <p className="text-gray-600">
+          No CV content yet. Create it in Sanity Studio!
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-bold mb-4">CV</h1>
-      
-      <div className="mb-8 text-gray-600">
-        <p className="font-medium text-lg">Luther Thie</p>
-      </div>
+      <h1 className="text-4xl font-bold mb-8">{cv.title || 'CV'}</h1>
 
-      <div className="space-y-12">
-        {/* Exhibitions */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Art Exhibitions and Presentations</h2>
-          
-          <div className="space-y-6">
-            <div>
-              <p className="font-medium">2025</p>
-              <p><em>Bedtime Stories for Oankali,</em> Beyond Boundaries, Mercury20, Oakland, CA. Group show curated by Demetri Broxton.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2024</p>
-              <p><em>Fermentation Rig,</em> Metamorphosis, Mercury20, Oakland, CA. Group show curated by Elena Gross.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2019</p>
-              <p><em>About Future,</em> Millepiani, Rome, Italy, curated group show, "Sigmund on the Beach," 3D Digital Render, Ink-Jet Print.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2018</p>
-              <p><em>Altered,</em> Off-Space at Minnesota St Projects, San Francisco, CA, curated group show, ink drop paintings on drum heads.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2013</p>
-              <p><em>Acclair Art Valuation Service,</em> Bruun Rasmussen Auctioneers, Copenhagen, Denmark.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2012</p>
-              <p><em>I AM CRIME: Art on the Edge of Law,</em> curated by Justin Hoover, SomArts, San Francisco.</p>
-              <p>Mind Symposium at Stanford University curated by Piero Scarufi.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2011</p>
-              <p><em>Fuck All Y'All,</em> Third Strike: 100 Performances for the Hole, SomArts, San Francisco, CA.</p>
-              <p><em>The Count,</em> Ever After curated by Off-Space, Chapel of the Chimes, Oakland, CA.</p>
-              <p><em>Mine,</em> Chain Letter, Shoshana Wayne Gallery, Los Angeles, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2010</p>
-              <p><em>LA Interchange,</em> 2×2 Solo Show, ProArts Oakland, CA.</p>
-              <p><em>Acclair Art Valuation Service,</em> STRP Festival of Art and Technology, The Netherlands.</p>
-              <p><em>O Pioneers,</em> photographs in collaboration with Kathrine Worel, Siege at Kala Institute Gallery, Berkeley, CA.</p>
-              <p>Frontiers: On the Edge in Merced and Malibu, photographs in collaboration with Kathrine Worel, Design Observer Places.</p>
-              <p><em>Pushing Paper,</em> Rhodes & Fletcher, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2009</p>
-              <p><em>Acclair Art Valuation Service,</em> Take On Me, Van Abbemuseum, Eindhoven, The Netherlands.</p>
-              <p><em>Given,</em> Seduction of Duchamp, Slaughterhousespace, Healdsburg, CA.</p>
-              <p><em>LA Interchange,</em> Art.Tech, The Lab, San Francisco, CA.</p>
-              <p><em>Precipice,</em> Berkeley Center for New Media commission.</p>
-              <p><em>No Obstacles,</em> Tomorrow, Steven Wolf Fine Arts, San Francisco, CA.</p>
-              <p><em>Naos,</em> Algorithmia, Root Division, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2008</p>
-              <p><em>Tilted Pole,</em> Beautiful Eyesores, Art Engine Gallery, San Francisco, CA.</p>
-              <p>Artist in Residence, Headlands Center for the Arts, Marin, CA.</p>
-              <p><em>Naos,</em> Villa Montalvo, Saratoga, CA (part of Montalvo Arts Center Residency June-Aug).</p>
-              <p><em>Hummer (Actions with the H2),</em> 100 Performances in the Hole, Garage Biennale, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2007</p>
-              <p><em>LA Interchange,</em> 21 Grand Gallery, Oakland, CA.</p>
-              <p><em>Acclair Installation,</em> Corporate Art Expo 2007, The Lab, San Francisco, CA.</p>
-              <p><em>Acclair Waiting Room and Testing Room,</em> John Q. Public & Citizen Jane: Private Americans in the Political Domain, University Art Gallery, San Diego State University, San Diego, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2006</p>
-              <p><em>Acclair Presentation,</em> Sampling Oakland, Yerba Buena Center for the Arts, San Francisco, CA.</p>
-              <p><em>Acclair Service Bureau,</em> ISEA 2006 ZeroOne Art on the Edge Festival, San Jose, CA.</p>
-              <p><em>Acclair Demonstration,</em> Garage Biennale, San Francisco, CA.</p>
-              <p><em>Acclair Exhibit,</em> Myth of History, 21 Grand Gallery, Oakland, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2005</p>
-              <p><em>One to Another,</em> 21 Grand Gallery, Oakland, CA.</p>
-              <p><em>Acclair Exhibit and Presentation,</em> Conference on Computer Human Interaction CHI 2005, Portland, OR.</p>
-              <p><em>Acclair Presentation,</em> Dorkbot, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2004</p>
-              <p><em>AutoGrill Monument,</em> Improbable Monuments, SF Camerawork, San Francisco, CA.</p>
-              <p><em>Acclair Service Bureau,</em> Borderline, Fondazione Sandretto Re Rebaudengo, Turin, Italy.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2003</p>
-              <p><em>Forget,</em> Bu.Net Internet Cafe and Gallery, Torino, Italy, Video installation with Kathrine Worel.</p>
-              <p><em>Foam,</em> Richmond Art Center, Richmond, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">2002</p>
-              <p><em>Again,</em> 21 Grand Gallery, Oakland, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1999</p>
-              <p><em>CorpCult,</em> Sanchez Art Center, Pacifica, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1997</p>
-              <p><em>Cabin Fever,</em> Scene/Escena, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1996</p>
-              <p><em>Shag,</em> The Lab, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1995</p>
-              <p><em>Dildo,</em> Railway Spine, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1994</p>
-              <p><em>Enormous Burden,</em> Happy Hands, Victoria Room, San Francisco, CA.</p>
-              <p><em>Butterfly Affect,</em> Urban Artists and The Natural World, installation with Kathrine Worel, Chapman College, Orange, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1993</p>
-              <p><em>Labyrinth/Laboratory,</em> San Francisco State MFA show.</p>
-              <p><em>Nature/Nurture,</em> The Science Fair, Southern Exposure, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1991</p>
-              <p><em>The Right Answer,</em> Un Musee Miniscule, New Langton Arts, San Francisco, CA.</p>
-            </div>
-
-            <div>
-              <p className="font-medium">1989</p>
-              <p><em>Laughter Walking,</em> guerilla street theater, various locations, Los Angeles, CA.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Awards */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Awards</h2>
-          <div>
-            <p className="font-medium">2006</p>
-            <p>Emerging Artist Award, ISEA 2006 ZeroOne (with Eyal Fried, Acclair partner)</p>
-            <p className="text-sm text-gray-600 mt-1">Juried by Christiane Paul, adjunct curator of new media at the Whitney Museum of American Art, Deborah Lawler-Dormer, Director of the Moving Image Centre in Auckland, New Zealand, and Adriane Wortzel.</p>
-          </div>
-        </section>
-
-        {/* Residencies */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Arts Residencies</h2>
-          <div className="space-y-4">
-            <div>
-              <p className="font-medium">June-August 2008</p>
-              <p>Montalvo Arts Center, selection through recommendation.</p>
-            </div>
-            <div>
-              <p className="font-medium">October-November 2008</p>
-              <p>Headlands Center for the Arts, Film, Video, New Media category.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Publications */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Publications</h2>
-          <div className="space-y-2 text-sm">
-            <p>Art Practical review of Ever After, November 2011.</p>
-            <p>Eindhovens Dagblad newspaper, October 21, 2009, review of Acclair Art Valuation Services.</p>
-            <p>Leonardo Journal of Art, Science and Technology, Creative Data special issue, essay discussing LA Interchange, October 2009.</p>
-            <p>San Francisco Chronicle, Kenneth Baker review of installation Tilted Pole, 10/10/08.</p>
-            <p>Los Angeles Times, LA Interchange.</p>
-            <p>ArtWeek, 11-2008, review of Acclair in Corporate Art Expo 2007 at The Lab, San Francisco.</p>
-          </div>
-        </section>
-
-        {/* Collections */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Collections</h2>
-          <p>Stanford Library, "Tomorrow," boxed set of artist prints from 2009. Photo included: "No Obstacles Stand in the Way of a Good Cocksucker," from "Inspirational Fortunes" series</p>
-        </section>
-
-        {/* Exhibitions Curated */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Exhibitions Curated</h2>
-          <div className="space-y-2">
-            <p>1994: 24 hours, San Francisco, CA.</p>
-            <p>2004: Borderline, Sandretto Re Rebaudengo, Torino, Italy.</p>
-          </div>
-        </section>
-
-        {/* Education */}
-        <section>
-          <h2 className="text-2xl font-bold mb-6 border-b pb-2">Education</h2>
-          <div className="space-y-4">
-            <div>
-              <p className="font-medium">MA 2004</p>
-              <p>Interaction Design, Interaction Design Institute Ivrea, Italy</p>
-            </div>
-            <div>
-              <p className="font-medium">MFA 1993</p>
-              <p>Sculpture/Installation, San Francisco State University (Honors)</p>
-            </div>
-            <div>
-              <p className="font-medium">BFA 1986</p>
-              <p>Studio Art, University of California Los Angeles</p>
-            </div>
-          </div>
-        </section>
-      </div>
+      {cv.content && (
+        <div className="prose prose-lg max-w-none">
+          <PortableText
+            value={cv.content}
+            components={portableTextComponents}
+          />
+        </div>
+      )}
     </div>
   )
 }
