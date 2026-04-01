@@ -223,9 +223,6 @@ export default async function ProjectPage({
           </p>
         )}
         
-        {/* TEMP DEBUG - remove after */}
-        <p className="text-xs text-red-500">Layout value: "{project.statementLayout}" | chars: {project.statementLayout?.split('').map((c: string) => c.charCodeAt(0)).join(',')}</p>
-
         {project.statement && Array.isArray(project.statement) && (
           <div className={project.statementLayout?.includes('twoColumn') ? 'prose max-w-none lg:columns-2 lg:gap-8' : 'prose max-w-3xl'}>
             <PortableText value={project.statement} />
