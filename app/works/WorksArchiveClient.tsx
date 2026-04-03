@@ -120,7 +120,7 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="all">All Types</option>
             {workTypes.map(type => (
@@ -134,7 +134,7 @@ export default function WorksArchiveClient({ works }: WorksArchiveClientProps) {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="all">All Years</option>
             {years.map(year => (
