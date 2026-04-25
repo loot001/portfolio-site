@@ -1,5 +1,5 @@
 import { client } from '@/lib/sanity.client';
-import MosaicGridView from '@/components/MosaicGridView/MosaicGridView';
+import MosaicGridView2 from '@/components/MosaicGridView2/MosaicGridView2';
 
 export const revalidate = 60;
 
@@ -22,7 +22,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      <MosaicGridView works={allWorks} />
+      <MosaicGridView2 works={allWorks} />
     </main>
   );
 }
